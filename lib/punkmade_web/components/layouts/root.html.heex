@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title suffix=" · Phoenix Framework">
+    <.live_title suffix=" · Punkmade">
       <%= assigns[:page_title] || "Punkmade" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
@@ -12,6 +12,43 @@
     </script>
   </head>
   <body class="bg-bg text-fg">
+    <ul class="relative z-10 flex items-center gap-4 justify-end bg-primary px-4 py-4 mb-4">
+      <%= if @current_user do %>
+        <li>
+          <%= @current_user.email %>
+        </li>
+        <li class="text-fg hover:text-alttext hover:cursor-pointer">
+          <.lnk
+            ref={~p"/users/settings"}
+          >
+            Settings
+          </.lnk>
+        </li>
+        <li>
+          <.lnk
+            ref={~p"/users/log_out"}
+            method="delete"
+          >
+            Log out
+          </.lnk>
+        </li>
+      <% else %>
+        <li>
+          <.lnk
+           ref={~p"/users/register"}
+          >
+            Register
+          </.lnk>
+        </li>
+        <li>
+          <.lnk
+            ref={~p"/users/log_in"}
+          >
+            Log in
+          </.lnk>
+        </li>
+      <% end %>
+    </ul>
     <%= @inner_content %>
   </body>
 </html>
