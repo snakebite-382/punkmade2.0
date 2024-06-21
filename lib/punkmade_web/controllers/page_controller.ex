@@ -3,6 +3,7 @@ defmodule PunkmadeWeb.PageController do
 
   def home(conn, _params) do
     conn
+    |> put_flash(:error, "test")
     |> render(:home)
   end
 end
