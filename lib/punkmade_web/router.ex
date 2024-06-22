@@ -17,12 +17,6 @@ defmodule PunkmadeWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", PunkmadeWeb do
-    pipe_through :browser
-
-    get "/", PageController, :home
-  end
-
   # Other scopes may use custom stacks.
   # scope "/api", PunkmadeWeb do
   #   pipe_through :api
@@ -72,6 +66,7 @@ defmodule PunkmadeWeb.Router do
       on_mount: [{PunkmadeWeb.UserAuth, :mount_current_user}] do
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
+      live "/", HomeLive, :index
     end
   end
 end
