@@ -20,6 +20,9 @@ defmodule PunkmadeWeb.UserSettingsLive do
     user = socket.assigns.current_user
     email_changeset = Accounts.change_user_email(user)
     password_changeset = Accounts.change_user_password(user)
+    username_changeset = Accounts.change_username(user)
+    full_name_changeset = Accounts.change_full_name(user)
+    bio_changeset = Accounts.change_bio(user)
 
     socket =
       socket
@@ -28,9 +31,103 @@ defmodule PunkmadeWeb.UserSettingsLive do
       |> assign(:current_email, user.email)
       |> assign(:email_form, to_form(email_changeset))
       |> assign(:password_form, to_form(password_changeset))
+      |> assign(:username_form, to_form(username_changeset))
+      |> assign(:full_name_form, to_form(full_name_changeset))
+      |> assign(:bio_form, to_form(bio_changeset))
       |> assign(:trigger_submit, false)
 
     {:ok, socket}
+  end
+
+  def handle_event("validate_full_name", params, socket) do
+    %{"user" => user_params} = params
+
+    full_name_form =
+      socket.assigns.current_user
+      |> Accounts.change_full_name(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, full_name_form: full_name_form)}
+  end
+
+  def handle_event("update_full_name", params, socket) do
+    %{"user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.update_full_name(user, user_params) do
+      {:ok, new_user} ->
+        info = "Your full name has been updated"
+
+        {:noreply, socket |> put_flash(:info, info) |> assign(:current_user, new_user)}
+
+      {:error, changeset} ->
+        error =
+          "An error occurred while updating your name, double check your inputs are valid, and that your name changes"
+
+        {:noreply,
+         socket
+         |> put_flash(:error, error)
+         |> assign(:full_name_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
+  end
+
+  def handle_event("validate_bio", params, socket) do
+    %{"user" => user_params} = params
+
+    bio_form =
+      socket.assigns.current_user
+      |> Accounts.change_bio(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, bio_form: bio_form)}
+  end
+
+  def handle_event("update_bio", params, socket) do
+    %{"user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.update_bio(user, user_params) do
+      {:ok, new_user} ->
+        info = "Your bio has been updated"
+
+        {:noreply, socket |> put_flash(:info, info) |> assign(:current_user, new_user)}
+
+      {:error, changeset} ->
+        error = "There was an error updating your bio"
+
+        {:noreply,
+         socket
+         |> put_flash(:error, error)
+         |> assign(:bio_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
+  end
+
+  def handle_event("validate_username", params, socket) do
+    %{"user" => user_params} = params
+
+    username_form =
+      socket.assigns.current_user
+      |> Accounts.change_username(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, username_form: username_form)}
+  end
+
+  def handle_event("update_username", params, socket) do
+    %{"user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.update_username(user, user_params) do
+      {:ok, new_user} ->
+        info = "Your username has been updated"
+        {:noreply, socket |> put_flash(:info, info) |> assign(:current_user, new_user)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :username_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
   end
 
   def handle_event("validate_email", params, socket) do

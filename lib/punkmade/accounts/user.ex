@@ -3,6 +3,13 @@ defmodule Punkmade.Accounts.User do
   import Ecto.Changeset
 
   schema "users" do
+    field :username, :string
+    field :full_name, :string
+    field :first_name, :string, virtual: true
+    field :last_name, :string, virtual: true
+    field :bio, :string
+    field :pronouns, :string
+    field :gravatar_url, :string
     field :email, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
@@ -34,12 +41,51 @@ defmodule Punkmade.Accounts.User do
       using this changeset for validations on a LiveView form before
       submitting the form), this option can be set to `false`.
       Defaults to `true`.
+
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:username, :first_name, :last_name, :email, :password])
+    |> validate_username()
     |> validate_email(opts)
     |> validate_password(opts)
+    |> validate_name()
+  end
+
+  defp validate_name(changset) do
+    changset
+    |> validate_required([:first_name, :last_name])
+    |> validate_length(:first_name, max: 50, min: 2)
+    |> validate_length(:last_name, max: 50, min: 2)
+    |> validate_format(:first_name, ~r/^[A-Za-zÀ-ÖØ-öø-ÿ\'\-]+$/,
+      message: "must contain letters (accents are fine), hyphens and apostrophes only"
+    )
+    |> validate_format(:last_name, ~r/^[A-Za-zÀ-ÖØ-öø-ÿ\'\-]+$/,
+      message: "must contain letters (accents are fine), hyphens and apostrophes only"
+    )
+    |> concat_names()
+  end
+
+  defp concat_names(changset) do
+    first_name = get_change(changset, :first_name)
+    last_name = get_change(changset, :last_name)
+
+    if first_name && last_name do
+      full_name = first_name <> " " <> last_name
+
+      changset
+      |> put_change(:full_name, full_name)
+      |> delete_change(:first_name)
+      |> delete_change(:last_name)
+    else
+      changset
+    end
+  end
+
+  defp validate_username(changeset) do
+    changeset
+    |> validate_required([:username])
+    |> validate_length(:username, max: 32, min: 2)
   end
 
   defp validate_email(changeset, opts) do
@@ -53,11 +99,13 @@ defmodule Punkmade.Accounts.User do
   defp validate_password(changeset, opts) do
     changeset
     |> validate_required([:password])
-    |> validate_length(:password, min: 12, max: 72)
+    |> validate_length(:password, min: 8, max: 72)
     # Examples of additional password validation:
-    # |> validate_format(:password, ~r/[a-z]/, message: "at least one lower case character")
-    # |> validate_format(:password, ~r/[A-Z]/, message: "at least one upper case character")
-    # |> validate_format(:password, ~r/[!?@#$%^&*_0-9]/, message: "at least one digit or punctuation character")
+    |> validate_format(:password, ~r/[a-z]/, message: "at least one lower case character")
+    |> validate_format(:password, ~r/[A-Z]/, message: "at least one upper case character")
+    |> validate_format(:password, ~r/[!?@#$%^&*_0-9]/,
+      message: "at least one digit or punctuation character"
+    )
     |> maybe_hash_password(opts)
   end
 
@@ -88,6 +136,49 @@ defmodule Punkmade.Accounts.User do
     end
   end
 
+  defp validate_changed(changeset, value) do
+    changeset
+    |> case do
+      %{changes: %{^value => _}} = changeset -> changeset
+      %{} = changeset -> add_error(changeset, value, "did not change")
+    end
+  end
+
+  def bio_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:bio])
+    |> validate_required(:bio)
+    |> validate_length(:bio, max: 255, min: 0)
+    |> validate_changed(:bio)
+  end
+
+  @doc """
+  A user changeset to update the username 
+
+  if the username doesn't change an error is added
+  """
+  def username_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username])
+    |> validate_username()
+    |> validate_changed(:username)
+  end
+
+  @doc """
+  A user changeset to update teh users name
+
+  errors if the name doesn't change
+  """
+
+  def full_name_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:first_name, :last_name])
+    |> validate_required(:first_name)
+    |> validate_required(:last_name)
+    |> validate_name()
+    |> validate_changed(:full_name)
+  end
+
   @doc """
   A user changeset for changing the email.
 
@@ -97,10 +188,7 @@ defmodule Punkmade.Accounts.User do
     user
     |> cast(attrs, [:email])
     |> validate_email(opts)
-    |> case do
-      %{changes: %{email: _}} = changeset -> changeset
-      %{} = changeset -> add_error(changeset, :email, "did not change")
-    end
+    |> validate_changed(:email)
   end
 
   @doc """

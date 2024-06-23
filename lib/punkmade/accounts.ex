@@ -4,6 +4,7 @@ defmodule Punkmade.Accounts do
   """
 
   import Ecto.Query, warn: false
+  import Ecto.Changeset
   alias Punkmade.Repo
 
   alias Punkmade.Accounts.{User, UserToken, UserNotifier}
@@ -94,6 +95,71 @@ defmodule Punkmade.Accounts do
   end
 
   ## Settings
+
+  @doc """
+  Returns a `%Ecto.Changeset{}` to change the username
+  """
+
+  def change_username(user, attrs \\ %{}) do
+    User.username_changeset(user, attrs)
+  end
+
+  def change_full_name(user, attrs \\ %{}) do
+    changeset = User.full_name_changeset(user, attrs)
+
+    [first_name, last_name] =
+      user
+      |> Map.fetch!(:full_name)
+      |> String.split()
+
+    changeset
+    |> put_change(:first_name, first_name)
+    |> put_change(:last_name, last_name)
+  end
+
+  def change_bio(user, attrs \\ %{}) do
+    User.bio_changeset(user, attrs)
+  end
+
+  def update_bio(user, attrs) do
+    changeset =
+      user |> User.bio_changeset(attrs)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.update(:user, changeset)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{user: user}} -> {:ok, user}
+      {:error, :user, changeset, _} -> {:error, changeset}
+    end
+  end
+
+  def update_full_name(user, attrs) do
+    changeset =
+      user |> User.full_name_changeset(attrs)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.update(:user, changeset)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{user: user}} -> {:ok, user}
+      {:error, :user, changeset, _} -> {:error, changeset}
+    end
+  end
+
+  def update_username(user, attrs) do
+    changeset =
+      user
+      |> User.username_changeset(attrs)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.update(:user, changeset)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{user: user}} -> {:ok, user}
+      {:error, :user, changeset, _} -> {:error, changeset}
+    end
+  end
 
   @doc """
   Returns an `%Ecto.Changeset{}` for changing the user email.
