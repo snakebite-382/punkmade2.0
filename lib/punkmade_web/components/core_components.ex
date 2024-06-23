@@ -89,9 +89,20 @@ defmodule PunkmadeWeb.CoreComponents do
     """
   end
 
+  attr :url, :string, required: true
+  attr :username, :string, required: true
+  attr :size, :string, default: "256"
+
+  def avatar(assigns) do
+    ~H"""
+    <img src={@url <> "?size=#{@size}"} alt={"#{@username}'s avatar"} class="rounded-full" />
+    """
+  end
+
   attr :ref, :string, required: true
   attr :method, :string, default: "get"
   attr :class, :string, default: ""
+  attr :target, :string, default: ""
   slot :inner_block, required: true
 
   def lnk(assigns) do
@@ -100,6 +111,7 @@ defmodule PunkmadeWeb.CoreComponents do
       href={@ref}
       method={@method}
       class={@class <> " text-fg hover:text-alttext hover:cursor-pointer"}
+      target={@target}
     >
       <%= render_slot(@inner_block) %>
     </.link>

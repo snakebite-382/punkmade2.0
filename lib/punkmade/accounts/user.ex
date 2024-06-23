@@ -52,7 +52,23 @@ defmodule Punkmade.Accounts.User do
     |> validate_username()
     |> validate_email(opts)
     |> validate_password(opts)
+    |> add_gravatar()
     |> validate_name()
+  end
+
+  defp add_gravatar(changeset) do
+    email = get_change(changeset, :email)
+
+    if email do
+      hash =
+        :crypto.hash(:sha256, email |> String.trim() |> String.downcase())
+        |> Base.encode16(case: :lower)
+
+      changeset
+      |> put_change(:gravatar_url, "https://gravatar.com/avatar/" <> hash)
+    else
+      changeset
+    end
   end
 
   defp validate_name(changset) do
