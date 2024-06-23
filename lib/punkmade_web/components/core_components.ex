@@ -91,11 +91,16 @@ defmodule PunkmadeWeb.CoreComponents do
 
   attr :ref, :string, required: true
   attr :method, :string, default: "get"
+  attr :class, :string, default: ""
   slot :inner_block, required: true
 
   def lnk(assigns) do
     ~H"""
-    <.link href={@ref} method={@method} class="text-fg hover:text-alttext hover:cursor-pointer">
+    <.link
+      href={@ref}
+      method={@method}
+      class={@class <> " text-fg hover:text-alttext hover:cursor-pointer"}
+    >
       <%= render_slot(@inner_block) %>
     </.link>
     """
