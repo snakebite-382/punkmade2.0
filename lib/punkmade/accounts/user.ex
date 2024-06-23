@@ -9,6 +9,9 @@ defmodule Punkmade.Accounts.User do
     field :last_name, :string, virtual: true
     field :bio, :string
     field :pronouns, :string
+    field :pronoun_subjective, :string, virtual: true
+    field :pronoun_objective, :string, virtual: true
+    field :pronoun_possessive, :string, virtual: true
     field :gravatar_url, :string
     field :email, :string
     field :password, :string, virtual: true, redact: true
@@ -75,8 +78,6 @@ defmodule Punkmade.Accounts.User do
 
       changset
       |> put_change(:full_name, full_name)
-      |> delete_change(:first_name)
-      |> delete_change(:last_name)
     else
       changset
     end
@@ -162,6 +163,46 @@ defmodule Punkmade.Accounts.User do
     |> cast(attrs, [:username])
     |> validate_username()
     |> validate_changed(:username)
+  end
+
+  @doc """
+  A user changeset to update pronouns
+
+  if the pronouns don't change an error is added
+  """
+
+  def pronoun_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:pronoun_subjective, :pronoun_objective, :pronoun_possessive])
+    |> validate_pronoun(:pronoun_subjective)
+    |> validate_pronoun(:pronoun_objective)
+    |> validate_pronoun(:pronoun_possessive)
+    |> concat_pronouns()
+    |> validate_changed(:pronouns)
+  end
+
+  defp validate_pronoun(changeset, pronoun) do
+    changeset
+    |> validate_required(pronoun)
+    |> validate_format(:first_name, ~r/^[A-Za-zÀ-ÖØ-öø-ÿ]+$/,
+      message: "Must be only letters (accents are fine)"
+    )
+    |> validate_length(pronoun, min: 2, max: 6)
+  end
+
+  defp concat_pronouns(changeset) do
+    subjective = get_change(changeset, :pronoun_subjective)
+    objective = get_change(changeset, :pronoun_objective)
+    possessive = get_change(changeset, :pronoun_possessive)
+
+    if subjective && objective && possessive do
+      pronouns = subjective <> "/" <> objective <> "/" <> possessive
+
+      changeset
+      |> put_change(:pronouns, pronouns)
+    else
+      changeset
+    end
   end
 
   @doc """

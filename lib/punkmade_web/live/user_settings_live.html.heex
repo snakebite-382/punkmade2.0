@@ -5,6 +5,58 @@
 
 <div class="space-y-12 divide-y divide-color-fg px-12 sm:px-20 lg:px-40">
   <div class="pt-8">
+    <div class="flex justify-center font-semibold text-lg"><div>Username </div></div>
+    <.simple_form
+      for={@username_form}
+      id="username_form"
+      phx-submit="update_username"
+      phx-change="validate_username"
+    >
+      <.input field={@username_form[:username]} type="text" label="Username" required />
+      <:actions>
+        <.button phx-disable-with="Changing...">Change Username</.button>
+      </:actions>
+    </.simple_form>
+  </div>
+
+  <div class="pt-8">
+    <div class="flex justify-center font-semibold text-lg"><div>Pronouns </div></div>
+    <.simple_form
+      for={@pronouns_form}
+      id="pronouns_form"
+      phx-submit="update_pronouns"
+      phx-change="validate_pronouns"
+    >
+      <div class="flex justify-between">
+        <.input 
+          field={@pronouns_form[:pronoun_subjective]}
+          type="text"
+          label="Subjective "
+          maxlength="6"
+          required
+        /> 
+        <.input 
+          field={@pronouns_form[:pronoun_objective]}
+          type="text"
+          label="Objective "
+          maxlength="6"
+          required
+        />
+        <.input 
+          field={@pronouns_form[:pronoun_possessive]}
+          type="text"
+          label="Possessive "
+          maxlength="6"
+          required
+        />
+      </div>
+      <:actions>
+        <.button phx-disable-with="Changing...">Change Pronouns</.button>
+      </:actions>
+    </.simple_form>
+  </div>
+
+  <div class="pt-8">
     <div class="flex justify-center font-semibold text-lg"><div>Bio </div></div>
     <.simple_form
       for={@bio_form}
@@ -50,21 +102,7 @@
       </:actions>
     </.simple_form>
   </div>
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Username </div></div>
-    <.simple_form
-      for={@username_form}
-      id="username_form"
-      phx-submit="update_username"
-      phx-change="validate_username"
-    >
-      <.input field={@username_form[:username]} type="text" label="Username" required />
-      <:actions>
-        <.button phx-disable-with="Changing...">Change Username</.button>
-      </:actions>
-    </.simple_form>
-  </div>
-  
+    
   <div class="pt-8">
     <div class="flex justify-center font-semibold text-lg"><div>Email</div></div>
     <.simple_form
@@ -89,31 +127,7 @@
       </:actions>
     </.simple_form>
   </div>
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Email</div></div>
-    <.simple_form
-      for={@email_form}
-      id="email_form"
-      phx-submit="update_email"
-      phx-change="validate_email"
-    >
-      <.input field={@email_form[:email]} type="email" label="Email" required />
-
-      <.input
-        field={@email_form[:current_password]}
-        name="current_password"
-        id="current_password_for_email"
-        type="password"
-        label="Current password"
-        value={@email_form_current_password}
-        required
-      />
-      <:actions>
-        <.button phx-disable-with="Changing...">Change Email</.button>
-      </:actions>
-    </.simple_form>
-  </div>
-  <div class="pt-8">
+  <div class="py-8">
     <div class="flex justify-center font-semibold text-lg"><div>Password</div></div>
     <.simple_form
       for={@password_form}

@@ -23,6 +23,7 @@ defmodule PunkmadeWeb.UserSettingsLive do
     username_changeset = Accounts.change_username(user)
     full_name_changeset = Accounts.change_full_name(user)
     bio_changeset = Accounts.change_bio(user)
+    pronouns_changeset = Accounts.change_pronouns(user)
 
     socket =
       socket
@@ -34,6 +35,7 @@ defmodule PunkmadeWeb.UserSettingsLive do
       |> assign(:username_form, to_form(username_changeset))
       |> assign(:full_name_form, to_form(full_name_changeset))
       |> assign(:bio_form, to_form(bio_changeset))
+      |> assign(:pronouns_form, to_form(pronouns_changeset))
       |> assign(:trigger_submit, false)
 
     {:ok, socket}
@@ -69,6 +71,39 @@ defmodule PunkmadeWeb.UserSettingsLive do
          socket
          |> put_flash(:error, error)
          |> assign(:full_name_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
+  end
+
+  def handle_event("validate_pronouns", params, socket) do
+    %{"user" => user_params} = params
+
+    pronouns_form =
+      socket.assigns.current_user
+      |> Accounts.change_pronouns(user_params)
+      |> Map.put(:action, :validate)
+      |> to_form()
+
+    {:noreply, assign(socket, pronouns_form: pronouns_form)}
+  end
+
+  def handle_event("update_pronouns", params, socket) do
+    %{"user" => user_params} = params
+    user = socket.assigns.current_user
+
+    case Accounts.update_pronouns(user, user_params) do
+      {:ok, new_user} ->
+        info = "Your pronouns have been updated"
+
+        {:noreply, socket |> put_flash(:info, info) |> assign(:current_user, new_user)}
+
+      {:error, changeset} ->
+        error =
+          "An error occurred while updating your pronouns, double check your inputs are valid and your pronouns change"
+
+        {:noreply,
+         socket
+         |> put_flash(:error, error)
+         |> assign(:pronouns_form, to_form(Map.put(changeset, :action, :insert)))}
     end
   end
 

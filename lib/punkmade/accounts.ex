@@ -121,6 +121,37 @@ defmodule Punkmade.Accounts do
     User.bio_changeset(user, attrs)
   end
 
+  def change_pronouns(user, attrs \\ %{}) do
+    changeset = User.pronoun_changeset(user, attrs)
+
+    [subjective, objective, possessive] =
+      user
+      |> Map.fetch(:pronouns)
+      |> case do
+        {:ok, pronouns} when pronouns != nil -> String.split(pronouns, "/")
+        {:ok, nil} -> [nil, nil, nil]
+        :error -> [nil, nil, nil]
+      end
+
+    changeset
+    |> put_change(:pronoun_subjective, subjective)
+    |> put_change(:pronoun_objective, objective)
+    |> put_change(:pronoun_possessive, possessive)
+  end
+
+  def update_pronouns(user, attrs) do
+    changeset =
+      user |> User.pronoun_changeset(attrs)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.update(:user, changeset)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{user: user}} -> {:ok, user}
+      {:error, :user, changeset, _} -> {:error, changeset}
+    end
+  end
+
   def update_bio(user, attrs) do
     changeset =
       user |> User.bio_changeset(attrs)
