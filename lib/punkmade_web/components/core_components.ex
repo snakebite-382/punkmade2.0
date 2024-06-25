@@ -1,19 +1,4 @@
 defmodule PunkmadeWeb.CoreComponents do
-  @moduledoc """
-  Provides core UI components.
-
-  At first glance, this module may seem daunting, but its goal is to provide
-  core building blocks for your application, such as modals, tables, and
-  forms. The components consist mostly of markup and are well-documented
-  with doc strings and declarative assigns. You may customize and style
-  them in any way you want, based on your application growth and needs.
-
-  The default components use Tailwind CSS, a utility-first CSS framework.
-  See the [Tailwind CSS documentation](https://tailwindcss.com) to learn
-  how to customize them or feel free to swap in another framework altogether.
-
-  Icons are provided by [heroicons](https://heroicons.com). See `icon/1` for usage.
-  """
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS
@@ -21,20 +6,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   @doc """
   Renders a modal.
-
-  ## Examples
-
-      <.modal id="confirm-modal">
-        This is a modal.
-      </.modal>
-
-  JS commands may be passed to the `:on_cancel` to configure
-  the closing/cancel event, for example:
-  core
-      <.modal id="confirm" on_cancel={JS.navigate(~p"/posts")}>
-        This is another modal.
-      </.modal>
-
   """
   attr :id, :string, required: true
   attr :show, :boolean, default: false
@@ -89,6 +60,10 @@ defmodule PunkmadeWeb.CoreComponents do
     """
   end
 
+  @doc """
+  takes in a users gravatar-url and shows their avatar
+  """
+
   attr :url, :string, required: true
   attr :username, :string, required: true
   attr :size, :string, default: "256"
@@ -98,6 +73,10 @@ defmodule PunkmadeWeb.CoreComponents do
     <img src={@url <> "?size=#{@size}"} alt={"#{@username}'s avatar"} class="rounded-full" />
     """
   end
+
+  @doc """
+  a wrapper to .link for my custom styles
+  """
 
   attr :ref, :string, required: true
   attr :method, :string, default: "get"
@@ -120,11 +99,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   @doc """
   Renders flash notices.
-
-  ## Examples
-
-      <.flash kind={:info} flash={@flash} />
-      <.flash kind={:info} phx-mounted={show("#flash")}>Welcome Back!</.flash>
   """
   attr :id, :string, doc: "the optional id of flash container"
   attr :flash, :map, default: %{}, doc: "the map of flash messages to display"
@@ -167,10 +141,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   @doc """
   Shows the flash group with standard titles and content.
-
-  ## Examples
-
-      <.flash_group flash={@flash} />
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :id, :string, default: "flash-group", doc: "the optional id of flash container"
@@ -209,16 +179,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   @doc """
   Renders a simple form.
-
-  ## Examples
-
-      <.simple_form for={@form} phx-change="validate" phx-submit="save">
-        <.input field={@form[:email]} label="Email"/>
-        <.input field={@form[:username]} label="Username" />
-        <:actions>
-          <.button>Save</.button>
-        </:actions>
-      </.simple_form>
   """
   attr :for, :any, required: true, doc: "the data structure for the form"
   attr :as, :any, default: nil, doc: "the server side parameter to collect all input under"
@@ -245,11 +205,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   @doc """
   Renders a button.
-
-  ## Examples
-
-      <.button>Send!</.button>
-      <.button phx-click="go" class="ml-2">Send!</.button>
   """
   attr :type, :string, default: nil
   attr :class, :string, default: nil
@@ -293,11 +248,6 @@ defmodule PunkmadeWeb.CoreComponents do
   See https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
   for more information. Unsupported types, such as hidden and radio,
   are best written directly in your templates.
-
-  ## Examples
-
-      <.input field={@form[:email]} type="email" />
-      <.input name="my-input" errors={["oh no!"]} />
   """
   attr :id, :any, default: nil
   attr :name, :any
@@ -458,8 +408,13 @@ defmodule PunkmadeWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
-      <div>
+    <header class={[
+      @actions != [] &&
+        " flex items-center justify-between gap-6",
+      @class,
+      "divide-y space-y-12 px-16"
+    ]}>
+      <div class="text-center">
         <h1 class="text-xl font-semibold leading-8">
           <%= render_slot(@inner_block) %>
         </h1>
@@ -472,15 +427,38 @@ defmodule PunkmadeWeb.CoreComponents do
     """
   end
 
+  slot :inner_block, required: true
+
+  def meat(assigns) do
+    ~H"""
+    <div class="space-y-12 divide-y divide-color-fg px-12 sm:px-40 lg:px-40 pb-8">
+      <%= render_slot(@inner_block) %>
+    </div>
+    """
+  end
+
+  slot :inner_block, required: true
+
+  def layer(assigns) do
+    ~H"""
+    <div class="pt-8">
+      <%= render_slot(@inner_block) %>
+    </div>
+    """
+  end
+
+  slot :inner_block, required: true
+
+  def subheader(assigns) do
+    ~H"""
+    <div class="text-center font-semibold text-lg">
+      <%= render_slot(@inner_block) %>
+    </div>
+    """
+  end
+
   @doc ~S"""
   Renders a table with generic styling.
-
-  ## Examples
-
-      <.table id="users" rows={@users}>
-        <:col :let={user} label="id"><%= user.id %></:col>
-        <:col :let={user} label="username"><%= user.username %></:col>
-      </.table>
   """
   attr :id, :string, required: true
   attr :rows, :list, required: true
@@ -552,13 +530,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   @doc """
   Renders a data list.
-
-  ## Examples
-
-      <.list>
-        <:item title="Title"><%= @post.title %></:item>
-        <:item title="Views"><%= @post.views %></:item>
-      </.list>
   """
   slot :item, required: true do
     attr :title, :string, required: true
@@ -579,10 +550,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   @doc """
   Renders a back navigation link.
-
-  ## Examples
-
-      <.back navigate={~p"/posts"}>Back to posts</.back>
   """
   attr :navigate, :any, required: true
   slot :inner_block, required: true
@@ -613,11 +580,6 @@ defmodule PunkmadeWeb.CoreComponents do
 
   Icons are extracted from the `deps/heroicons` directory and bundled within
   your compiled app.css by the plugin in your `assets/tailwind.config.js`.
-
-  ## Examples
-
-      <.icon name="hero-x-mark-solid" />
-      <.icon name="hero-arrow-path" class="ml-1 w-3 h-3 animate-spin" />
   """
   attr :name, :string, required: true
   attr :class, :string, default: nil

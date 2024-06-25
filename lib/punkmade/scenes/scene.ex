@@ -38,8 +38,6 @@ defmodule Punkmade.Scenes.Scene do
 
     if get_change(changeset, :city) && get_change(changeset, :state) &&
          get_change(changeset, :country) do
-      IO.puts("DOING ID SHIT")
-
       changeset
       |> put_change(:unique_place_identifier, gen_place_id(changeset))
     else

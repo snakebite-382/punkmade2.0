@@ -1,11 +1,11 @@
-<.header class="text-center divide-y space-y-12 px-16">
+<.header>
   Account Settings
   <:subtitle>Manage your account settings such as username, email, password, bio, and pronouns</:subtitle>
 </.header>
 
-<div class="space-y-12 divide-y divide-color-fg px-12 sm:px-20 lg:px-40">
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg "><div>Avatar </div></div>
+<.meat>
+  <.layer>
+    <.subheader>Avatar</.subheader>
 
     <span class="flex justify-center m-8">
       <.avatar url={@current_user.gravatar_url} username={@current_user.username} size="128" />
@@ -13,9 +13,9 @@
 
     <div class="flex justify-center text-base ">
       <div class="text-center">Your avatar can be changed at <.lnk ref="https://gravatar.com/profile" target="_blank" class="underline ">gravatar.com/profile</.lnk> (changes to profile information on gravatar.com will not affect your profile here, and your profile changes here won't effect your gravatar profile)</div></div>
-  </div>
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Username </div></div>
+  </.layer>
+  <.layer>
+    <.subheader> Username</.subheader>
     <.simple_form
       for={@username_form}
       id="username_form"
@@ -27,10 +27,10 @@
         <.button phx-disable-with="Changing...">Change Username</.button>
       </:actions>
     </.simple_form>
-  </div>
+  </.layer>
 
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Pronouns </div></div>
+<.layer>
+    <.subheader>Pronouns</.subheader>
     <.simple_form
       for={@pronouns_form}
       id="pronouns_form"
@@ -66,10 +66,10 @@
         <.button phx-disable-with="Changing...">Change Pronouns</.button>
       </:actions>
     </.simple_form>
-  </div>
+  </.layer>
 
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Bio </div></div>
+  <.layer>
+    <.subheader>Bio </.subheader>
     <.simple_form
       for={@bio_form}
       id="bio_form"
@@ -87,10 +87,10 @@
         <.button phx-disable-with="Changing...">Change Bio</.button>
       </:actions>
     </.simple_form>
-  </div>
+  </.layer>
 
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Full Name </div></div>
+  <.layer>
+    <.subheader>Full Name</.subheader>
     <.simple_form
       for={@full_name_form}
       id="full_name_form"
@@ -113,10 +113,10 @@
         <.button phx-disable-with="Changing...">Change Name</.button>
       </:actions>
     </.simple_form>
-  </div>
+  </.layer>
     
-  <div class="pt-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Email</div></div>
+  <.layer>
+    <.layer>Email</.layer>
     <.simple_form
       for={@email_form}
       id="email_form"
@@ -138,9 +138,10 @@
         <.button phx-disable-with="Changing...">Change Email</.button>
       </:actions>
     </.simple_form>
-  </div>
-  <div class="py-8">
-    <div class="flex justify-center font-semibold text-lg"><div>Password</div></div>
+  </.layer>
+
+  <.layer>
+    <.subheader>Password</.subheader>
     <.simple_form
       for={@password_form}
       id="password_form"
@@ -175,6 +176,5 @@
         <.button phx-disable-with="Changing...">Change Password</.button>
       </:actions>
     </.simple_form>
-  </div>
-</div>
-
+  </.layer>
+</.meat>

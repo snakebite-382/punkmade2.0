@@ -39,9 +39,7 @@ defmodule Punkmade.Scenes do
     |> Repo.insert()
     |> case do
       {:ok, scene} ->
-        %Membership{}
-        |> Scenes.change_membership(%{user_id: user_id, scene_id: scene.id})
-        |> Repo.insert()
+        Scenes.join_scene(user_id, scene.id)
         |> case do
           {:ok, _membership} ->
             {:ok, scene}
@@ -56,11 +54,25 @@ defmodule Punkmade.Scenes do
     end
   end
 
-  def search_scene(place_id \\ "") do
+  def join_scene(user_id, scene_id) do
+    %Membership{}
+    |> Scenes.change_membership(%{user_id: user_id, scene_id: scene_id})
+    |> Repo.insert()
+  end
+
+  def search_scene(user_id, place_id \\ "") do
     query =
       from scene in Scenes.Scene,
-        where: like(scene.unique_place_identifier, ^place_id),
-        select: [scene.id, scene.city, scene.country, scene.state]
+        left_join: membership in Scenes.Membership,
+        on: membership.scene_id == scene.id and membership.user_id == ^user_id,
+        where: like(scene.unique_place_identifier, ^"%#{place_id}%"),
+        select: %{
+          id: scene.id,
+          city: scene.city,
+          country: scene.country,
+          state: scene.state,
+          member: membership.id
+        }
 
     Repo.all(query)
   end

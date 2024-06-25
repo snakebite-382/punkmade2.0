@@ -103,6 +103,8 @@ defmodule Punkmade.Accounts.User do
     changeset
     |> validate_required([:username])
     |> validate_length(:username, max: 32, min: 2)
+    |> unsafe_validate_unique(:username, Punkmade.Repo)
+    |> unique_constraint(:username)
   end
 
   defp validate_email(changeset, opts) do

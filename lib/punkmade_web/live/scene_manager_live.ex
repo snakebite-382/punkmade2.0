@@ -71,10 +71,10 @@ defmodule PunkmadeWeb.SceneManagerLive do
 
     if changeset.valid? do
       results =
-        Scenes.search_scene(Ecto.Changeset.get_change(changeset, :unique_place_identifier))
-        |> Enum.map(fn [id, city, country, state] ->
-          %{id: id, city: city, country: country, state: state}
-        end)
+        Scenes.search_scene(
+          socket.assigns.current_user.id,
+          Ecto.Changeset.get_change(changeset, :unique_place_identifier)
+        )
 
       IO.inspect(results)
 
@@ -83,6 +83,27 @@ defmodule PunkmadeWeb.SceneManagerLive do
        |> assign(:search_results, results)}
     else
       {:noreply, socket}
+    end
+  end
+
+  def handle_event("join_scene", params, socket) do
+    %{"id" => scene_id} = params
+
+    case Scenes.join_scene(socket.assigns.current_user.id, scene_id) do
+      {:ok, membership} ->
+        info = "Successfully joined scene"
+
+        {:noreply,
+         socket
+         |> assign(:memberships, socket.assigns.memberships ++ [membership])
+         |> put_flash(:info, info)}
+
+      {:error, _changest} ->
+        error = "Error joining scene"
+
+        {:noreply,
+         socket
+         |> put_flash(:error, error)}
     end
   end
 end

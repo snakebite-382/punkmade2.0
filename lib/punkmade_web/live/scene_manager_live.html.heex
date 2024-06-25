@@ -3,8 +3,8 @@
   <:subtitle>Create, join, and manage scenes</:subtitle>
 </.header>
 
-<div class="px-12 sm:px-20 lg:px-40 divide-y divide-color-fg space-y-12">
-  <div class="pt-8">
+<.meat>
+  <.layer>
     <div class="text-lg text-center font-semibold">My Scenes</div>
 
     <%= if length(@memberships) == 0 do %>
@@ -12,8 +12,8 @@
     <% else %>
       test
     <% end %>
-  </div>
-  <div class="pt-8">
+  </.layer>
+  <.layer>
     <div class="text-lg text-center font-semibold">Create Scenes</div>
     <.simple_form
       for={@create_form}
@@ -33,8 +33,8 @@
         </.button>
       </:actions>
     </.simple_form>
-  </div>
-  <div class="p-8">
+  </.layer>
+  <.layer>
     <div class="text-lg text-center font-semibold">Join Scenes</div>
     <.simple_form
       for={@search_form}
@@ -50,9 +50,9 @@
     <ul class="pt-4">
       <%= for scene <- @search_results do %>
         <li>
-          <%= scene.country %> | <%= scene.state %> | <%= scene.city %>
+          <%= scene.country %> | <%= scene.state %> | <%= scene.city %> | <%= if scene.member do %> joined <% else %> <.button phx-click="join_scene" phx-value-id={scene.id}>join </.button> <% end %>
         </li>
       <% end %>
     </ul>
-  </div>
-</div>
+  </.layer>
+</.meat>
