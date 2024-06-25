@@ -1,0 +1,58 @@
+<.header class="text-center px-16 divide-y space-y-12">
+  Scene Manager
+  <:subtitle>Create, join, and manage scenes</:subtitle>
+</.header>
+
+<div class="px-12 sm:px-20 lg:px-40 divide-y divide-color-fg space-y-12">
+  <div class="pt-8">
+    <div class="text-lg text-center font-semibold">My Scenes</div>
+
+    <%= if length(@memberships) == 0 do %>
+      <div class="text-base text-center">You are not in any scenes</div>
+    <% else %>
+      test
+    <% end %>
+  </div>
+  <div class="pt-8">
+    <div class="text-lg text-center font-semibold">Create Scenes</div>
+    <.simple_form
+      for={@create_form}
+      id="create_scene_form"
+      phx-submit="create_scene"
+      phx-change="validate_scene"
+    >
+      <.input field={@create_form[:country]} type="text" label="Country" required/>
+
+      <.input field={@create_form[:city]} type="text" label="City" required/>
+
+      <.input field={@create_form[:state]} type="text" label="State (optional)" required />
+      <.input type="hidden" label="" field={@create_form[:unique_place_identifier]} />
+      <:actions>
+        <.button phx-disable-with="Changing...">
+          Create Scene
+        </.button>
+      </:actions>
+    </.simple_form>
+  </div>
+  <div class="p-8">
+    <div class="text-lg text-center font-semibold">Join Scenes</div>
+    <.simple_form
+      for={@search_form}
+      id="search_form"
+      phx-change="search"
+    >
+      <.input field={@search_form[:country]} type="text" label="Country"/>
+
+      <.input field={@search_form[:city]} type="text" label="City" />
+
+      <.input field={@search_form[:state]} type="text" label="State (optional)"  />
+    </.simple_form>
+    <ul class="pt-4">
+      <%= for scene <- @search_results do %>
+        <li>
+          <%= scene.country %> | <%= scene.state %> | <%= scene.city %>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</div>

@@ -25,13 +25,13 @@ defmodule PunkmadeWeb.PostController do
     render(conn, :show, post: post)
   end
 
-  def update(conn, %{"id" => id, "post" => post_params}) do
-    post = Posts.get_post!(id)
+  # def update(conn, %{"id" => id, "post" => post_params}) do
+  #   post = Posts.get_post!(id)
 
-    with {:ok, %Post{} = post} <- Posts.update_post(post, post_params) do
-      render(conn, :show, post: post)
-    end
-  end
+  #   with {:ok, %Post{} = post} <- Posts.update_post(post, post_params) do
+  #     render(conn, :show, post: post)
+  #   end
+  # end
 
   def delete(conn, %{"id" => id}) do
     post = Posts.get_post!(id)

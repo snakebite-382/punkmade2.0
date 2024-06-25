@@ -1,1 +1,8 @@
 <h1>Hello, World!</h1>
+<%= if @current_user do %>
+  <%= if length(@memberships) == 0 do %>
+    You are not in any scenes <.lnk ref="/scenes/manage" class="underline">join some</.lnk> to start posting and viewing content
+  <% else %>
+    test
+  <% end %>
+<% end %>

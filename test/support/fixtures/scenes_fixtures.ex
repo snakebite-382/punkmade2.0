@@ -18,4 +18,19 @@ defmodule Punkmade.ScenesFixtures do
 
     scene
   end
+
+  @doc """
+  Generate a membership.
+  """
+  def membership_fixture(attrs \\ %{}) do
+    {:ok, membership} =
+      attrs
+      |> Enum.into(%{
+        scene_id: 42,
+        user_id: 42
+      })
+      |> Punkmade.Scenes.create_membership()
+
+    membership
+  end
 end

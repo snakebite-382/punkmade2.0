@@ -27,6 +27,11 @@
 
       <div class="ml-auto flex gap-4">
         <%= if @current_user do %>
+          <li>
+            <.lnk ref={~p"/scenes/manage"}>
+              Scenes
+            </.lnk>
+          </li>
           <li class="text-fg hover:text-alttext hover:cursor-pointer">
             <.lnk
               ref={~p"/users/settings"}

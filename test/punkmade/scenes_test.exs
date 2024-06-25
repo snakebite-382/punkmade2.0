@@ -58,4 +58,60 @@ defmodule Punkmade.ScenesTest do
       assert %Ecto.Changeset{} = Scenes.change_scene(scene)
     end
   end
+
+  describe "memberships" do
+    alias Punkmade.Scenes.Membership
+
+    import Punkmade.ScenesFixtures
+
+    @invalid_attrs %{scene_id: nil, user_id: nil}
+
+    test "list_memberships/0 returns all memberships" do
+      membership = membership_fixture()
+      assert Scenes.list_memberships() == [membership]
+    end
+
+    test "get_membership!/1 returns the membership with given id" do
+      membership = membership_fixture()
+      assert Scenes.get_membership!(membership.id) == membership
+    end
+
+    test "create_membership/1 with valid data creates a membership" do
+      valid_attrs = %{scene_id: 42, user_id: 42}
+
+      assert {:ok, %Membership{} = membership} = Scenes.create_membership(valid_attrs)
+      assert membership.scene_id == 42
+      assert membership.user_id == 42
+    end
+
+    test "create_membership/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Scenes.create_membership(@invalid_attrs)
+    end
+
+    test "update_membership/2 with valid data updates the membership" do
+      membership = membership_fixture()
+      update_attrs = %{scene_id: 43, user_id: 43}
+
+      assert {:ok, %Membership{} = membership} = Scenes.update_membership(membership, update_attrs)
+      assert membership.scene_id == 43
+      assert membership.user_id == 43
+    end
+
+    test "update_membership/2 with invalid data returns error changeset" do
+      membership = membership_fixture()
+      assert {:error, %Ecto.Changeset{}} = Scenes.update_membership(membership, @invalid_attrs)
+      assert membership == Scenes.get_membership!(membership.id)
+    end
+
+    test "delete_membership/1 deletes the membership" do
+      membership = membership_fixture()
+      assert {:ok, %Membership{}} = Scenes.delete_membership(membership)
+      assert_raise Ecto.NoResultsError, fn -> Scenes.get_membership!(membership.id) end
+    end
+
+    test "change_membership/1 returns a membership changeset" do
+      membership = membership_fixture()
+      assert %Ecto.Changeset{} = Scenes.change_membership(membership)
+    end
+  end
 end

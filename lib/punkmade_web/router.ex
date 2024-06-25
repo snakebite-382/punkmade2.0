@@ -31,6 +31,12 @@ defmodule PunkmadeWeb.Router do
     end
   end
 
+  scope "/api", PunkmadeWeb do
+    resources "/posts", PostController, except: [:new, :edit]
+    resources "/scenes", SceneController, except: [:new, :edit, :delete]
+    resources "/memberships", MembershipController, except: [:new, :edit]
+  end
+
   ## Authentication routes
 
   scope "/", PunkmadeWeb do
@@ -54,6 +60,7 @@ defmodule PunkmadeWeb.Router do
       on_mount: [{PunkmadeWeb.UserAuth, :ensure_authenticated}] do
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+      live "/scenes/manage", SceneManagerLive
     end
   end
 

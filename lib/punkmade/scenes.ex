@@ -4,101 +4,121 @@ defmodule Punkmade.Scenes do
   """
 
   import Ecto.Query, warn: false
+  alias Punkmade.Scenes.Membership
   alias Punkmade.Repo
+  alias Punkmade.Scenes
 
   alias Punkmade.Scenes.Scene
 
   @doc """
-  Returns the list of scenes.
-
-  ## Examples
-
-      iex> list_scenes()
-      [%Scene{}, ...]
-
+  takes in a user id and lists all scene memberships
   """
-  def list_scenes do
-    Repo.all(Scene)
+
+  def get_memberships(user_id) do
+    query =
+      from membership in Punkmade.Scenes.Membership,
+        where: membership.user_id == ^user_id,
+        select: membership
+
+    Repo.all(query)
   end
 
   @doc """
   Gets a single scene.
 
   Raises `Ecto.NoResultsError` if the Scene does not exist.
-
-  ## Examples
-
-      iex> get_scene!(123)
-      %Scene{}
-
-      iex> get_scene!(456)
-      ** (Ecto.NoResultsError)
-
   """
   def get_scene!(id), do: Repo.get!(Scene, id)
 
   @doc """
   Creates a scene.
-
-  ## Examples
-
-      iex> create_scene(%{field: value})
-      {:ok, %Scene{}}
-
-      iex> create_scene(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
   """
-  def create_scene(attrs \\ %{}) do
+  def create_scene(user_id, attrs \\ %{}, opts \\ []) do
     %Scene{}
-    |> Scene.changeset(attrs)
+    |> Scene.creation_changeset(attrs, opts)
     |> Repo.insert()
+    |> case do
+      {:ok, scene} ->
+        %Membership{}
+        |> Scenes.change_membership(%{user_id: user_id, scene_id: scene.id})
+        |> Repo.insert()
+        |> case do
+          {:ok, _membership} ->
+            {:ok, scene}
+
+          {:error, changeset} ->
+            Repo.delete(scene)
+            {:error, changeset}
+        end
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  def search_scene(place_id \\ "") do
+    query =
+      from scene in Scenes.Scene,
+        where: like(scene.unique_place_identifier, ^place_id),
+        select: [scene.id, scene.city, scene.country, scene.state]
+
+    Repo.all(query)
   end
 
   @doc """
   Updates a scene.
-
-  ## Examples
-
-      iex> update_scene(scene, %{field: new_value})
-      {:ok, %Scene{}}
-
-      iex> update_scene(scene, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
   """
   def update_scene(%Scene{} = scene, attrs) do
     scene
-    |> Scene.changeset(attrs)
+    |> Scene.creation_changeset(attrs)
     |> Repo.update()
-  end
+    |> case do
+      {:ok, %{scene: scene}} ->
+        {:ok, scene}
 
-  @doc """
-  Deletes a scene.
-
-  ## Examples
-
-      iex> delete_scene(scene)
-      {:ok, %Scene{}}
-
-      iex> delete_scene(scene)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def delete_scene(%Scene{} = scene) do
-    Repo.delete(scene)
+      {:error, :scene, changeset, _} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking scene changes.
-
-  ## Examples
-
-      iex> change_scene(scene)
-      %Ecto.Changeset{data: %Scene{}}
-
   """
-  def change_scene(%Scene{} = scene, attrs \\ %{}) do
-    Scene.changeset(scene, attrs)
+  def change_scene(%Scene{} = scene, attrs \\ %{}, opts \\ []) do
+    Scene.creation_changeset(scene, attrs, opts)
+  end
+
+  alias Punkmade.Scenes.Membership
+
+  @doc """
+  Creates a membership.
+  """
+  def create_membership(attrs \\ %{}) do
+    %Membership{}
+    |> Membership.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a membership.
+  """
+  def update_membership(%Membership{} = membership, attrs) do
+    membership
+    |> Membership.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a membership.
+  """
+  def delete_membership(%Membership{} = membership) do
+    Repo.delete(membership)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking membership changes.
+  """
+  def change_membership(%Membership{} = membership, attrs \\ %{}) do
+    Membership.changeset(membership, attrs)
   end
 end
