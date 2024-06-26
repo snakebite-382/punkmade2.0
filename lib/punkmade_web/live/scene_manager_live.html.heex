@@ -10,7 +10,13 @@
     <%= if length(@memberships) == 0 do %>
       <div class="text-base text-center">You are not in any scenes</div>
     <% else %>
-      test
+      <ul>
+        <%= for membership <- @memberships do %>
+          <li>
+            <%= membership.country %> <%= membership.city %> <%= membership.state %> <.button phx-value-scene={membership.scene} phx-click="leave_scene"> leave </.button>
+          </li>
+        <% end %>
+      </ul>
     <% end %>
   </.layer>
   <.layer>
@@ -50,7 +56,7 @@
     <ul class="pt-4">
       <%= for scene <- @search_results do %>
         <li>
-          <%= scene.country %> | <%= scene.state %> | <%= scene.city %> | <%= if scene.member do %> joined <% else %> <.button phx-click="join_scene" phx-value-id={scene.id}>join </.button> <% end %>
+          <%= scene.country %> | <%= scene.city %> | <%= scene.state %> <%= if scene.member do %> joined <% else %> <.button phx-click="join_scene" phx-value-id={scene.id}>join </.button> <% end %>
         </li>
       <% end %>
     </ul>

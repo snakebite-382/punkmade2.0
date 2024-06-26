@@ -75,6 +75,13 @@ defmodule Punkmade.Scenes.Scene do
       message:
         "must only contain letters (accents are fine), hyphens, spaces, and apostrophes only"
     )
+
+    if not is_nil(get_change(changeset, change)) do
+      changeset
+      |> put_change(change, String.upcase(get_change(changeset, change)))
+    else
+      changeset
+    end
   end
 
   defp maybe_validate_country(changeset, opts) do

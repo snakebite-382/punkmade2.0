@@ -17,8 +17,16 @@ defmodule Punkmade.Scenes do
   def get_memberships(user_id) do
     query =
       from membership in Punkmade.Scenes.Membership,
+        left_join: scene in Punkmade.Scenes.Scene,
+        on: membership.scene_id == scene.id,
         where: membership.user_id == ^user_id,
-        select: membership
+        select: %{
+          scene: scene.id,
+          city: scene.city,
+          country: scene.country,
+          membership: membership.id,
+          state: scene.state
+        }
 
     Repo.all(query)
   end
@@ -58,6 +66,26 @@ defmodule Punkmade.Scenes do
     %Membership{}
     |> Scenes.change_membership(%{user_id: user_id, scene_id: scene_id})
     |> Repo.insert()
+    |> case do
+      {:ok, membership} ->
+        [result | _] =
+          from(
+            scene in Punkmade.Scenes.Scene,
+            where: scene.id == ^scene_id,
+            select: %{
+              scene: scene.id,
+              city: scene.city,
+              country: scene.country,
+              state: scene.state
+            }
+          )
+          |> Repo.all()
+
+        {:ok, result |> Map.put(:membership, membership.id)}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   def search_scene(user_id, place_id \\ "") do
@@ -123,8 +151,11 @@ defmodule Punkmade.Scenes do
   @doc """
   Deletes a membership.
   """
-  def delete_membership(%Membership{} = membership) do
-    Repo.delete(membership)
+  def delete_membership(user_id, scene_id) do
+    from(m in Punkmade.Scenes.Membership,
+      where: m.scene_id == ^scene_id and m.user_id == ^user_id
+    )
+    |> Repo.delete_all()
   end
 
   @doc """

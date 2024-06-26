@@ -7,10 +7,11 @@ defmodule PunkmadeWeb.SceneManagerLive do
     user = socket.assigns.current_user
     scene_changeset = Scenes.change_scene(%Scene{})
     search_changeset = Scene.search_changeset(%Scene{}, %{})
+    memberships = Scenes.get_memberships(user.id)
 
     socket =
       socket
-      |> assign(:memberships, Scenes.get_memberships(user.id))
+      |> assign(:memberships, memberships)
       |> assign(:create_form, to_form(scene_changeset))
       |> assign(:search_form, to_form(search_changeset))
       |> assign(:search_results, [])
@@ -93,9 +94,17 @@ defmodule PunkmadeWeb.SceneManagerLive do
       {:ok, membership} ->
         info = "Successfully joined scene"
 
+        results =
+          Enum.map(socket.assigns.search_results, fn m ->
+            if m.id == String.to_integer(scene_id) do
+              Map.put(m, :member, membership.membership)
+            end
+          end)
+
         {:noreply,
          socket
          |> assign(:memberships, socket.assigns.memberships ++ [membership])
+         |> assign(:search_results, results)
          |> put_flash(:info, info)}
 
       {:error, _changest} ->
@@ -104,6 +113,40 @@ defmodule PunkmadeWeb.SceneManagerLive do
         {:noreply,
          socket
          |> put_flash(:error, error)}
+    end
+  end
+
+  def handle_event("leave_scene", params, socket) do
+    %{"scene" => scene_id} = params
+
+    case Scenes.delete_membership(socket.assigns.current_user.id, scene_id) do
+      {deleted, _} when deleted > 0 ->
+        info = "scene left successfully"
+
+        # update both the membership list and search results so everything is always accurate
+
+        updated_memberships =
+          Enum.filter(socket.assigns.memberships, fn m ->
+            Map.get(m, :scene) != String.to_integer(scene_id)
+          end)
+
+        search_results =
+          Enum.map(socket.assigns.search_results, fn m ->
+            if m.id == String.to_integer(scene_id) do
+              Map.put(m, :member, nil)
+            end
+          end)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, info)
+         |> assign(:memberships, updated_memberships)
+         |> assign(:search_results, search_results)}
+
+      {0, _} ->
+        error = "there was an error leaving the scene"
+
+        {:noreply, socket |> put_flash(:error, error)}
     end
   end
 end
