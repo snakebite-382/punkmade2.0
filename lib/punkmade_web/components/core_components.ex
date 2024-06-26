@@ -19,9 +19,9 @@ defmodule PunkmadeWeb.CoreComponents do
       phx-mounted={@show && show_modal(@id)}
       phx-remove={hide_modal(@id)}
       data-cancel={JS.exec(@on_cancel, "phx-remove")}
-      class="relative z-50 hidden"
+      class="relative z-5 hidden"
     >
-      <div id={"#{@id}-bg"} class="bg-zinc-50/90 fixed inset-0 transition-opacity" aria-hidden="true" />
+      <div id={"#{@id}-bg"} class="bg-alttext/90 fixed inset-0 transition-opacity" aria-hidden="true" />
       <div
         class="fixed inset-0 overflow-y-auto"
         aria-labelledby={"#{@id}-title"}
@@ -31,15 +31,15 @@ defmodule PunkmadeWeb.CoreComponents do
         tabindex="0"
       >
         <div class="flex min-h-full items-center justify-center">
-          <div class="w-full max-w-3xl p-4 sm:p-6 lg:py-8">
+          <div class="w-full max-w-3xl p-2 sm:p-4 lg:py-8">
             <.focus_wrap
               id={"#{@id}-container"}
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-white p-14 shadow-lg ring-1 transition"
+              class="shadow-bg ring-bg relative hidden  bg-bg p-4 shadow-lg ring-1 transition fg-fg"
             >
-              <div class="absolute top-6 right-5">
+              <div class="absolute top-5 right-5">
                 <button
                   phx-click={JS.exec("data-cancel", to: "##{@id}")}
                   type="button"
@@ -120,7 +120,7 @@ defmodule PunkmadeWeb.CoreComponents do
       phx-window-keydown={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
       class={[
-        "mr-2 w-80 z-50 p-3",
+        "mr-2 w-80 z-100 p-3",
         @kind == :info && "bg-fg text-emerald-900",
         @kind == :error && "bg-fg text-primary"
       ]}
@@ -147,7 +147,7 @@ defmodule PunkmadeWeb.CoreComponents do
 
   def flash_group(assigns) do
     ~H"""
-    <div id={@id} class="fixed bottom-4 width-full inset-x-0 flex justify-center">
+    <div id={@id} class="fixed bottom-4 width-full inset-x-0 flex justify-center z-100">
       <.flash kind={:info} title={gettext("Success!")} flash={@flash} />
       <.flash kind={:error} title={gettext("Error!")} flash={@flash} />
       <.flash
@@ -259,6 +259,8 @@ defmodule PunkmadeWeb.CoreComponents do
     values: ~w(checkbox color date datetime-local email file month number password
                range search select tel text textarea time url week hidden)
 
+  attr :class, :string, default: ""
+
   attr :field, Phoenix.HTML.FormField,
     doc: "a form field struct retrieved from the form, for example: @form[:email]"
 
@@ -336,9 +338,10 @@ defmodule PunkmadeWeb.CoreComponents do
         id={@id}
         name={@name}
         class={[
-          "mt-2 block w-full bg-bg focus:ring-0 sm:text-sm sm:leading-6 min-h-[6rem]",
-          @errors == [] && "border-zinc-300 focus:border-zinc-400",
-          @errors != [] && "border-rose-400 focus:border-rose-400"
+          "mt-2 block w-full  sm:text-sm sm:leading-6 bg-bg focus:outline-none outline-none focus:ring-0 border-2",
+          @errors == [] && "border-alttext focus:border-fg",
+          @errors != [] && "border- focus:border-",
+          @class
         ]}
         {@rest}
       ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>

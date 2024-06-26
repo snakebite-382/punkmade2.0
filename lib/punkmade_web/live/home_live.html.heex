@@ -7,6 +7,28 @@
       </:subtitle>
     </.header>
   <% else %>
+    <.button id="post-button" phx-click={show_modal("post-modal")}>Post</.button>
+
+    <ul>
+      <%= for scene <- @memberships do %>
+        <li phx-click="navigate_scene" phx-value-scene={scene.scene}><%= scene.country %> | <%= scene.city %> | <%= scene.state %></li>
+      <% end %>
+    </ul>
+
+    <.modal id="post-modal" show={true}>
+        <%= if is_nil(@post_form) do %>
+          No scene selected
+        <% else %>
+         <h1 class="text-lg font-semibold mt-2">Create A Post</h1>
+          <.simple_form for={@post_form} phx-change="validate_post" phx-submit="create_post">
+            <.input field={@post_form[:title]} label="Title" type="text" maxlength="64"/>
+            <.input field={@post_form[:body]} label="Body" type="textarea" maxlength="2048" class="h-96"/>
+            <:actions>
+              <.button>Post</.button>
+            </:actions>
+          </.simple_form>
+        <% end %>
+    </.modal>
   <% end %>
 <% else %>
   <.header>
@@ -16,3 +38,5 @@
     </:subtitle>
   </.header>
 <% end %>
+
+<script src="/assets/home.js"></script> 
