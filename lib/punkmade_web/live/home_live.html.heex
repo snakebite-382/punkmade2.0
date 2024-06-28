@@ -15,7 +15,7 @@
       <% end %>
     </ul>
 
-    <.modal id="post-modal" show={true}>
+    <.modal id="post-modal" show={false}>
         <%= if is_nil(@post_form) do %>
           No scene selected
         <% else %>
@@ -29,6 +29,17 @@
           </.simple_form>
         <% end %>
     </.modal>
+
+    <ul class="gap-6">
+      <%= for post <- @posts do %>
+        <li class="my-4 flex-col flex">
+          <div><%= post.source.name %> : </div>
+          <div><%= post.content.title %> </div>
+          <div><%= post.content.body %> </div>
+        </li>
+      <% end %>
+    </ul>
+    <.button phx-click="load_more">Load More</.button>
   <% end %>
 <% else %>
   <.header>

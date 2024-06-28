@@ -1,4 +1,6 @@
 defmodule PunkmadeWeb.HomeLive do
+  @post_batch_size 5
+
   use PunkmadeWeb, :live_view
 
   alias Punkmade.Scenes
@@ -6,13 +8,12 @@ defmodule PunkmadeWeb.HomeLive do
   alias Punkmade.Posts.Post
 
   def mount(_params, _session, socket) do
-    IO.puts("MOUNT")
-
     if socket.assigns.current_user do
       socket =
         socket
         |> assign(:signed_in, "yes")
         |> assign(:memberships, Scenes.get_memberships(socket.assigns.current_user.id))
+        |> assign(:posts, [])
 
       {:ok, socket}
     else
@@ -25,6 +26,10 @@ defmodule PunkmadeWeb.HomeLive do
   end
 
   def handle_params(%{"scene_id" => scene_id}, _url, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Punkmade.PubSub, "post:#{scene_id}")
+    end
+
     post_changeset =
       Posts.change_post(%Posts.Post{}, %{
         scene_id: scene_id,
@@ -34,11 +39,31 @@ defmodule PunkmadeWeb.HomeLive do
     {:noreply,
      socket
      |> assign(:post_form, to_form(post_changeset))
-     |> assign(:scene_id, scene_id)}
+     |> assign(:scene_id, scene_id)
+     |> get_posts(scene_id)}
   end
 
   def handle_params(_params, _url, socket) do
     {:noreply, socket |> assign(:post_form, nil)}
+  end
+
+  defp get_posts(socket, scene_id) do
+    posts =
+      if Map.get(socket.assigns, :last_time_fetched) do
+        Posts.get_posts_by_scene(scene_id, @post_batch_size, socket.assigns.last_time_fetched)
+      else
+        Posts.get_posts_by_scene(scene_id, @post_batch_size)
+      end
+
+    if length(posts) == 0 do
+      socket |> put_flash(:error, "no more posts to load, go outside or something")
+    else
+      %{content: %{inserted_at: last_time}} = List.last(posts)
+
+      socket
+      |> update(:posts, fn old_posts -> old_posts ++ posts end)
+      |> assign(:last_time_fetched, last_time)
+    end
   end
 
   def handle_event("navigate_scene", params, socket) do
@@ -68,10 +93,8 @@ defmodule PunkmadeWeb.HomeLive do
     |> Map.put("scene_id", socket.assigns.scene_id)
     |> Posts.create_post()
     |> case do
-      {:ok, _post} ->
-        info = "post created successfully"
-
-        {:noreply, socket |> put_flash(:info, info)}
+      {:ok, post} ->
+        post_created(socket, post)
 
       {:error, changeset} ->
         error = "there was an error when creating your post"
@@ -81,6 +104,49 @@ defmodule PunkmadeWeb.HomeLive do
          socket
          |> put_flash(:error, error)
          |> assign(:post_form, to_form(Map.put(changeset, :action, :insert)))}
+    end
+  end
+
+  def handle_event("load_more", _params, socket) do
+    IO.puts("LAST TIME FETCHED")
+    IO.inspect(socket.assigns.last_time_fetched)
+    {:noreply, socket |> get_posts(socket.assigns.scene_id)}
+  end
+
+  def handle_info(
+        %{event: "new_post", topic: "post:" <> scene_id, payload: %{post: post, source: source}},
+        socket
+      ) do
+    if socket.assigns.scene_id == scene_id do
+      new_post = %{
+        source: source,
+        content: post
+      }
+
+      {:noreply, socket |> update(:posts, fn posts -> [new_post | posts] end)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp post_created(socket, post) do
+    info = "post created successfully"
+    user = socket.assigns.current_user
+
+    case PunkmadeWeb.Endpoint.broadcast("post:#{socket.assigns.scene_id}", "new_post", %{
+           post: post,
+           source: %{id: user.id, name: user.username}
+         }) do
+      :ok ->
+        {:noreply, socket |> put_flash(:info, info)}
+
+      {:error, _} ->
+        {:noreply,
+         socket
+         |> put_flash(
+           :error,
+           "Your post was created, but there was an error updating the feed for this scene, so a refresh might be required to see your post."
+         )}
     end
   end
 end
