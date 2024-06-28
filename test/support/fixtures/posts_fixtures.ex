@@ -21,4 +21,48 @@ defmodule Punkmade.PostsFixtures do
 
     post
   end
+
+  @doc """
+  Generate a comment.
+  """
+  def comment_fixture(attrs \\ %{}) do
+    {:ok, comment} =
+      attrs
+      |> Enum.into(%{
+        content: "some content"
+      })
+      |> Punkmade.Posts.create_comment()
+
+    comment
+  end
+
+  @doc """
+  Generate a like.
+  """
+  def like_fixture(attrs \\ %{}) do
+    {:ok, like} =
+      attrs
+      |> Enum.into(%{
+        post_id: 42,
+        user_id: 42
+      })
+      |> Punkmade.Posts.create_like()
+
+    like
+  end
+
+  @doc """
+  Generate a comment_like.
+  """
+  def comment_like_fixture(attrs \\ %{}) do
+    {:ok, comment_like} =
+      attrs
+      |> Enum.into(%{
+        comment_id: 42,
+        user_id: 42
+      })
+      |> Punkmade.Posts.create_comment_like()
+
+    comment_like
+  end
 end

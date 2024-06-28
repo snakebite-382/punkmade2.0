@@ -32,9 +32,6 @@ defmodule PunkmadeWeb.Router do
   end
 
   scope "/api", PunkmadeWeb do
-    resources "/posts", PostController, except: [:new, :edit]
-    resources "/scenes", SceneController, except: [:new, :edit, :delete]
-    resources "/memberships", MembershipController, except: [:new, :edit]
   end
 
   ## Authentication routes

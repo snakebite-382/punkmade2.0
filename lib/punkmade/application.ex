@@ -11,7 +11,6 @@ defmodule Punkmade.Application do
       PunkmadeWeb.Telemetry,
       Punkmade.Repo,
       {DNSCluster, query: Application.get_env(:punkmade, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Punkmade.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Punkmade.Finch},
       # Start a worker by calling: Punkmade.Worker.start_link(arg)

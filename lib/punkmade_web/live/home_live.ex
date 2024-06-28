@@ -1,5 +1,5 @@
 defmodule PunkmadeWeb.HomeLive do
-  @post_batch_size 5
+  @post_batch_size 10
 
   use PunkmadeWeb, :live_view
 
