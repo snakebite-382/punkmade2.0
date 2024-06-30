@@ -48,11 +48,13 @@ defmodule PunkmadeWeb.HomeLive do
   end
 
   defp get_posts(socket, scene_id) do
+    user = socket.assigns.current_user
+
     posts =
       if Map.get(socket.assigns, :last_time_fetched) do
         Posts.get_posts_by_scene(scene_id, @post_batch_size, socket.assigns.last_time_fetched)
       else
-        Posts.get_posts_by_scene(scene_id, @post_batch_size)
+        Posts.get_posts_by_scene(scene_id, user.id, @post_batch_size)
       end
 
     if length(posts) == 0 do
@@ -111,6 +113,33 @@ defmodule PunkmadeWeb.HomeLive do
     IO.puts("LAST TIME FETCHED")
     IO.inspect(socket.assigns.last_time_fetched)
     {:noreply, socket |> get_posts(socket.assigns.scene_id)}
+  end
+
+  def handle_event("toggle_like", %{"post_id" => post_id}, socket) do
+    user = socket.assigns.current_user
+
+    posts =
+      socket.assigns.posts
+      |> Enum.map(fn post ->
+        if post.id == String.to_integer(post_id) do
+          IO.inspect(post)
+
+          %{
+            id: post.id,
+            source: Map.get(post, :source),
+            content:
+              post
+              |> Map.get(:content)
+              |> Map.put(:user_liked, Posts.toggle_like?(post.id, user.id))
+          }
+        else
+          post
+        end
+      end)
+
+    IO.inspect(posts)
+
+    {:noreply, assign(socket, :posts, posts)}
   end
 
   def handle_info(

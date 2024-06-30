@@ -87,9 +87,9 @@ defmodule PunkmadeWeb.CoreComponents do
   def lnk(assigns) do
     ~H"""
     <.link
-      href={@ref}
+      navigate={@ref}
       method={@method}
-      class={@class <> " text-fg hover:text-alttext hover:cursor-pointer"}
+      class={@class <> " text-fg hover:text-alttext cursor-pointer"}
       target={@target}
     >
       <%= render_slot(@inner_block) %>
@@ -586,10 +586,11 @@ defmodule PunkmadeWeb.CoreComponents do
   """
   attr :name, :string, required: true
   attr :class, :string, default: nil
+  attr :rest, :global
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} />
+    <span class={[@name, @class]} {@rest} />
     """
   end
 
