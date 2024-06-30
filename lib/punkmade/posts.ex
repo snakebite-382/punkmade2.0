@@ -4,6 +4,7 @@ defmodule Punkmade.Posts do
   """
 
   import Ecto.Query, warn: false
+  alias Punkmade.Posts.Like
   alias Punkmade.Repo
 
   alias Punkmade.Posts.Post
@@ -15,14 +16,32 @@ defmodule Punkmade.Posts do
   """
   def get_post!(id), do: Repo.get!(Post, id)
 
-  def get_posts_by_scene(scene_id, batch_size, last_time_fetched \\ nil) do
+  def get_posts_by_scene(scene_id, user_id, batch_size, last_time_fetched \\ nil) do
+    like_count_query =
+      from l in Like,
+        select: %{likes_count: count(l.id), post_id: l.post_id}
+
     base_query =
       from(p in Post,
         join: u in Punkmade.Accounts.User,
         on: u.id == p.user_id,
+        left_join: l in Like,
+        on: l.post_id == p.id and l.user_id == ^user_id,
+        left_join: lc in subquery(like_count_query),
+        on: lc.post_id == p.id,
         order_by: [desc: p.inserted_at],
         limit: ^batch_size,
-        select: %{source: %{id: u.id, name: u.username}, content: p}
+        select: %{
+          id: p.id,
+          source: %{id: u.id, name: u.username},
+          content: %{
+            title: p.title,
+            body: p.body,
+            inserted_at: p.inserted_at,
+            user_liked: not is_nil(l.id),
+            likes_count: coalesce(lc.likes_count, 0)
+          }
+        }
       )
 
     query =
@@ -124,6 +143,23 @@ defmodule Punkmade.Posts do
   """
   def delete_like(%Like{} = like) do
     Repo.delete(like)
+  end
+
+  def toggle_like?(post_id, user_id) do
+    like_exist_query =
+      from l in Like,
+        where: l.post_id == ^post_id and l.user_id == ^user_id,
+        limit: 1
+
+    case Repo.one(like_exist_query) do
+      nil ->
+        create_like(%{user_id: user_id, post_id: post_id})
+        true
+
+      like ->
+        delete_like(like)
+        false
+    end
   end
 
   @doc """
