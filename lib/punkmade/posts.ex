@@ -6,19 +6,61 @@ defmodule Punkmade.Posts do
   import Ecto.Query, warn: false
   alias Punkmade.Posts.Like
   alias Punkmade.Repo
-
+  alias Punkmade.Accounts.User
   alias Punkmade.Posts.Post
+
+  @doc """
+  takes in a post and the user who posted it and formats everything into a single map as expected by pages displaying a post
+  """
+  def format_post(%Post{} = post, %User{} = user, num_likes \\ 0, user_liked \\ false) do
+    %{
+      id: post.id,
+      source: %{id: user.id, name: user.username},
+      content: %{
+        title: post.title,
+        body: post.body,
+        inserted_at: post.inserted_at,
+        likes_count: num_likes,
+        user_liked: user_liked
+      }
+    }
+  end
 
   @doc """
   Gets a single post.
 
   Raises `Ecto.NoResultsError` if the Post does not exist.
   """
-  def get_post!(id), do: Repo.get!(Post, id)
+  def get_post(id, user_id) do
+    like_count_query =
+      from l in Like,
+        group_by: l.post_id,
+        select: %{likes_count: count(l.id), post_id: l.post_id}
+
+    query =
+      from p in Post,
+        where: p.id == ^id,
+        join: u in Punkmade.Accounts.User,
+        on: u.id == p.user_id,
+        left_join: l in Like,
+        on: l.post_id == p.id and l.user_id == ^user_id,
+        left_join: lc in subquery(like_count_query),
+        on: lc.post_id == p.id,
+        select: %{
+          post: p,
+          user: u,
+          user_liked: not is_nil(l.id),
+          likes_count: coalesce(lc.likes_count, 0)
+        }
+
+    result = Repo.one(query)
+    format_post(result.post, result.user, result.likes_count, result.user_liked)
+  end
 
   def get_posts_by_scene(scene_id, user_id, batch_size, last_time_fetched \\ nil) do
     like_count_query =
       from l in Like,
+        group_by: l.post_id,
         select: %{likes_count: count(l.id), post_id: l.post_id}
 
     base_query =
@@ -32,15 +74,10 @@ defmodule Punkmade.Posts do
         order_by: [desc: p.inserted_at],
         limit: ^batch_size,
         select: %{
-          id: p.id,
-          source: %{id: u.id, name: u.username},
-          content: %{
-            title: p.title,
-            body: p.body,
-            inserted_at: p.inserted_at,
-            user_liked: not is_nil(l.id),
-            likes_count: coalesce(lc.likes_count, 0)
-          }
+          post: p,
+          user: u,
+          user_liked: not is_nil(l.id),
+          likes_count: coalesce(lc.likes_count, 0)
         }
       )
 
@@ -55,7 +92,9 @@ defmodule Punkmade.Posts do
         )
       end
 
-    Repo.all(query)
+    Enum.map(Repo.all(query), fn result ->
+      format_post(result.post, result.user, result.likes_count, result.user_liked)
+    end)
   end
 
   @doc """

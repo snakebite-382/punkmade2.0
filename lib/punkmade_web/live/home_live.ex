@@ -143,16 +143,11 @@ defmodule PunkmadeWeb.HomeLive do
   end
 
   def handle_info(
-        %{event: "new_post", topic: "post:" <> scene_id, payload: %{post: post, source: source}},
+        %{event: "new_post", topic: "post:" <> scene_id, payload: post},
         socket
       ) do
     if socket.assigns.scene_id == scene_id do
-      new_post = %{
-        source: source,
-        content: post
-      }
-
-      {:noreply, socket |> update(:posts, fn posts -> [new_post | posts] end)}
+      {:noreply, socket |> update(:posts, fn posts -> [post | posts] end)}
     else
       {:noreply, socket}
     end
@@ -162,16 +157,11 @@ defmodule PunkmadeWeb.HomeLive do
     info = "post created successfully"
     user = socket.assigns.current_user
 
-    case PunkmadeWeb.Endpoint.broadcast("post:#{socket.assigns.scene_id}", "new_post", %{
-      id: post.id,
-      source: %{id: user.id, name: user.username},
-      content: %{
-        title: post.title,
-        body: post.body,
-        inserted_at: post.inserted_at,
-        user_liked: false,
-      }
-         }) do
+    case PunkmadeWeb.Endpoint.broadcast(
+           "post:#{socket.assigns.scene_id}",
+           "new_post",
+           Posts.format_post(post, user)
+         ) do
       :ok ->
         {:noreply, socket |> put_flash(:info, info)}
 

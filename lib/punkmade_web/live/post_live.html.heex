@@ -1,1 +1,24 @@
-<h1>Hello</h1>
+<.meat>
+  <.layer>
+    <div class="text-center gap-4 my-4 flex-col flex">
+      <div><%= @post.source.name %></div>
+      <div><%= @post.content.title %></div>
+      <div><%= @post.content.body %></div>
+      <div>
+        <%= @post.content.likes_count %> <.icon
+          class={if @post.content.user_liked do
+            "bg-accent"
+          else
+            "bg-fg"
+          end}
+          name={if @post.content.user_liked do
+            "hero-heart-solid"
+          else
+            "hero-heart"
+          end} 
+          phx-click="toggle_like" 
+          phx-value-post_id={@post.id}/>
+      </div>
+    </div>
+  </.layer>
+</.meat>
