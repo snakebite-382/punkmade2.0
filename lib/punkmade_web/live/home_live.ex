@@ -163,8 +163,14 @@ defmodule PunkmadeWeb.HomeLive do
     user = socket.assigns.current_user
 
     case PunkmadeWeb.Endpoint.broadcast("post:#{socket.assigns.scene_id}", "new_post", %{
-           post: post,
-           source: %{id: user.id, name: user.username}
+      id: post.id,
+      source: %{id: user.id, name: user.username},
+      content: %{
+        title: post.title,
+        body: post.body,
+        inserted_at: post.inserted_at,
+        user_liked: false,
+      }
          }) do
       :ok ->
         {:noreply, socket |> put_flash(:info, info)}
