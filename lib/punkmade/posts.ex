@@ -159,6 +159,22 @@ defmodule Punkmade.Posts do
     Comment.changeset(comment, attrs)
   end
 
+  @doc """
+  Formats a comment
+  """
+  def format_comment(%Comment{} = comment, %User{} = user, num_likes \\ 0, user_liked \\ false) do
+    %{
+      id: comment.id,
+      source: %{id: user.id, name: user.username},
+      content: %{
+        body: comment.content,
+        inserted_at: comment.inserted_at,
+        likes_count: num_likes,
+        user_liked: user_liked
+      }
+    }
+  end
+
   alias Punkmade.Posts.Like
 
   @doc """

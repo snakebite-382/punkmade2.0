@@ -21,4 +21,25 @@
       </div>
     </div>
   </.layer>
+  <.layer>
+  <ul class="comments">
+    <%= for comment <- @comments do %>
+      <li class="my-4 flex-col flex">
+        <div><%= comment.source.name %></div>
+        <div><%= comment.content.body %></div>
+      </li>
+    <% end %>
+    </ul>
+  <.simple_form 
+    for={@comment_form}
+    phx-change="validate_comment"
+    phx-submit="create_comment"
+  >
+    <.input field={@comment_form[:content]} type="textarea" maxlength="255" label="Comment: "/>
+
+    <:actions>
+      <.button>Post</.button>
+    </:actions>
+  </.simple_form>
+  </.layer>
 </.meat>
