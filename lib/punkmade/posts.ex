@@ -8,6 +8,7 @@ defmodule Punkmade.Posts do
   alias Punkmade.Repo
   alias Punkmade.Accounts.User
   alias Punkmade.Posts.Post
+  alias Punkmade.Posts.CommentLike
 
   @doc """
   takes in a post and the user who posted it and formats everything into a single map as expected by pages displaying a post
@@ -122,10 +123,47 @@ defmodule Punkmade.Posts do
 
   alias Punkmade.Posts.Comment
 
-  @doc """
-  Gets a single comment.
-  """
-  def get_comment!(id), do: Repo.get!(Comment, id)
+  def get_comments(post_id, user_id, batch_size, last_time_fetched \\ nil) do
+    like_count_query =
+      from l in CommentLike,
+        group_by: l.comment_id,
+        select: %{likes_count: count(l.id), comment_id: l.comment_id}
+
+    base_query =
+      from(c in Comment,
+        join: u in Punkmade.Accounts.User,
+        on: u.id == c.user_id,
+        left_join: l in CommentLike,
+        on: l.comment_id == c.id and l.user_id == ^user_id,
+        left_join: lc in subquery(like_count_query),
+        on: lc.comment_id == c.id,
+        order_by: [desc: c.inserted_at],
+        limit: ^batch_size,
+        select: %{
+          comment: c,
+          user: u,
+          user_liked: not is_nil(l.id),
+          likes_count: coalesce(lc.likes_count, 0)
+        }
+      )
+
+    query =
+      if last_time_fetched do
+        from(c in base_query,
+          where: c.post_id == ^post_id and c.inserted_at < ^last_time_fetched
+        )
+      else
+        from(c in base_query,
+          where: c.post_id == ^post_id
+        )
+      end
+
+    Repo.all(query)
+    |> Enum.reverse()
+    |> Enum.map(fn result ->
+      format_comment(result.comment, result.user, result.likes_count, result.user_liked)
+    end)
+  end
 
   @doc """
   Creates a comment.
@@ -222,5 +260,32 @@ defmodule Punkmade.Posts do
   """
   def change_like(%Like{} = like, attrs \\ %{}) do
     Like.changeset(like, attrs)
+  end
+
+  def toggle_comment_like?(comment_id, user_id) do
+    like_exist_query =
+      from l in CommentLike,
+        where: l.comment_id == ^comment_id and l.user_id == ^user_id,
+        limit: 1
+
+    case Repo.one(like_exist_query) do
+      nil ->
+        create_comment_like(%{user_id: user_id, comment_id: comment_id})
+        true
+
+      like ->
+        delete_comment_like(like)
+        false
+    end
+  end
+
+  def create_comment_like(attrs \\ %{}) do
+    %CommentLike{}
+    |> CommentLike.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def delete_comment_like(%CommentLike{} = like) do
+    Repo.delete(like)
   end
 end

@@ -22,11 +22,28 @@
     </div>
   </.layer>
   <.layer>
+  <.button phx-click="load_comments">Load more</.button>
   <ul class="comments">
     <%= for comment <- @comments do %>
       <li class="my-4 flex-col flex">
         <div><%= comment.source.name %></div>
         <div><%= comment.content.body %></div>
+        <div><%= comment.content.inserted_at %></div>
+        <div>
+          <%= comment.content.likes_count %> <.icon
+            class={if comment.content.user_liked do
+              "bg-accent"
+            else
+              "bg-fg"
+            end}
+            name={if comment.content.user_liked do
+              "hero-heart-solid"
+            else
+              "hero-heart"
+            end} 
+            phx-click="toggle_comment_like" 
+            phx-value-comment_id={comment.id}/>
+        </div>
       </li>
     <% end %>
     </ul>

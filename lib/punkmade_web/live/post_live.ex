@@ -1,4 +1,5 @@
 defmodule PunkmadeWeb.PostLive do
+  @comment_batch_size 5
   alias Punkmade.Posts
   alias Punkmade.Posts.Comment
   use PunkmadeWeb, :live_view
@@ -26,10 +27,40 @@ defmodule PunkmadeWeb.PostLive do
          )
        )
      )
-     |> assign(
-       :comments,
-       []
-     )}
+     |> assign(:comments, [])
+     |> fetch_comments(id)}
+  end
+
+  defp fetch_comments(socket, post_id) do
+    user = socket.assigns.current_user
+
+    comments =
+      if Map.get(socket.assigns, :last_time_fetched) do
+        Posts.get_comments(
+          post_id,
+          user.id,
+          @comment_batch_size,
+          socket.assigns.last_time_fetched
+        )
+      else
+        Posts.get_comments(post_id, user.id, @comment_batch_size)
+      end
+
+    if length(comments) == 0 do
+      socket |> put_flash(:error, "no more comments to fetch, go outside or something")
+    else
+      %{content: %{inserted_at: last_time}} = List.first(comments)
+
+      socket
+      |> update(:comments, fn old_comments -> comments ++ old_comments end)
+      |> assign(:last_time_fetched, last_time)
+    end
+  end
+
+  def handle_event("load_comments", _params, socket) do
+    {:noreply,
+     socket
+     |> fetch_comments(socket.assigns.post.id)}
   end
 
   def handle_event("validate_comment", %{"comment" => comment_params}, socket) do
@@ -66,17 +97,47 @@ defmodule PunkmadeWeb.PostLive do
     end
   end
 
+  def handle_event("toggle_comment_like", %{"comment_id" => comment_id}, socket) do
+    user = socket.assigns.current_user
+
+    comments =
+      socket.assigns.comments
+      |> Enum.map(fn comment ->
+        if comment.id == String.to_integer(comment_id) do
+          liked = Posts.toggle_comment_like?(comment_id, user.id)
+
+          %{
+            id: comment.id,
+            source: Map.get(comment, :source),
+            content:
+              comment
+              |> Map.get(:content)
+              |> Map.put(:user_liked, liked)
+              |> Map.update!(:likes_count, fn count ->
+                if liked do
+                  count + 1
+                else
+                  count - 1
+                end
+              end)
+          }
+        else
+          comment
+        end
+      end)
+
+    {:noreply, assign(socket, :comments, comments)}
+  end
+
   def handle_info(
         %{event: "new_comment", topic: "comment:" <> post_id, payload: comment},
         socket
       ) do
-    IO.inspect(comment)
-
     if socket.assigns.post.id == String.to_integer(post_id) do
       {:noreply,
        socket
        |> update(:comments, fn comments ->
-         comments ++ [comment]
+         comments ++ comment
        end)}
     else
       {:noreply, socket |> put_flash(:error, "ohuh")}

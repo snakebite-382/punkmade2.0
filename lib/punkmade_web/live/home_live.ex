@@ -52,7 +52,12 @@ defmodule PunkmadeWeb.HomeLive do
 
     posts =
       if Map.get(socket.assigns, :last_time_fetched) do
-        Posts.get_posts_by_scene(scene_id, @post_batch_size, socket.assigns.last_time_fetched)
+        Posts.get_posts_by_scene(
+          scene_id,
+          user.id,
+          @post_batch_size,
+          socket.assigns.last_time_fetched
+        )
       else
         Posts.get_posts_by_scene(scene_id, user.id, @post_batch_size)
       end
@@ -122,7 +127,7 @@ defmodule PunkmadeWeb.HomeLive do
       socket.assigns.posts
       |> Enum.map(fn post ->
         if post.id == String.to_integer(post_id) do
-          IO.inspect(post)
+          liked = Posts.toggle_like?(post_id, user.id)
 
           %{
             id: post.id,
@@ -130,14 +135,19 @@ defmodule PunkmadeWeb.HomeLive do
             content:
               post
               |> Map.get(:content)
-              |> Map.put(:user_liked, Posts.toggle_like?(post.id, user.id))
+              |> Map.put(:user_liked, liked)
+              |> Map.update!(:likes_count, fn count ->
+                if liked do
+                  count + 1
+                else
+                  count - 1
+                end
+              end)
           }
         else
           post
         end
       end)
-
-    IO.inspect(posts)
 
     {:noreply, assign(socket, :posts, posts)}
   end
