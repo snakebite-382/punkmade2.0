@@ -59,43 +59,13 @@ defmodule Punkmade.Posts do
   end
 
   def get_posts_by_scene(scene_id, user_id, batch_size, last_time_fetched \\ nil) do
-    like_count_query =
-      from l in Like,
-        group_by: l.post_id,
-        select: %{likes_count: count(l.id), post_id: l.post_id}
-
-    base_query =
-      from(p in Post,
-        join: u in Punkmade.Accounts.User,
-        on: u.id == p.user_id,
-        left_join: l in Like,
-        on: l.post_id == p.id and l.user_id == ^user_id,
-        left_join: lc in subquery(like_count_query),
-        on: lc.post_id == p.id,
-        order_by: [desc: p.inserted_at],
-        limit: ^batch_size,
-        select: %{
-          post: p,
-          user: u,
-          user_liked: not is_nil(l.id),
-          likes_count: coalesce(lc.likes_count, 0)
-        }
-      )
-
-    query =
-      if last_time_fetched do
-        from(p in base_query,
-          where: p.scene_id == ^scene_id and p.inserted_at < ^last_time_fetched
-        )
-      else
-        from(p in base_query,
-          where: p.scene_id == ^scene_id
-        )
-      end
-
-    Enum.map(Repo.all(query), fn result ->
-      format_post(result.post, result.user, result.likes_count, result.user_liked)
-    end)
+    Punkmade.Fido.fetch_many(
+      %Punkmade.Posts.Post{},
+      user_id,
+      scene_id,
+      batch_size,
+      last_time_fetched
+    )
   end
 
   @doc """
@@ -124,45 +94,13 @@ defmodule Punkmade.Posts do
   alias Punkmade.Posts.Comment
 
   def get_comments(post_id, user_id, batch_size, last_time_fetched \\ nil) do
-    like_count_query =
-      from l in CommentLike,
-        group_by: l.comment_id,
-        select: %{likes_count: count(l.id), comment_id: l.comment_id}
-
-    base_query =
-      from(c in Comment,
-        join: u in Punkmade.Accounts.User,
-        on: u.id == c.user_id,
-        left_join: l in CommentLike,
-        on: l.comment_id == c.id and l.user_id == ^user_id,
-        left_join: lc in subquery(like_count_query),
-        on: lc.comment_id == c.id,
-        order_by: [desc: c.inserted_at],
-        limit: ^batch_size,
-        select: %{
-          comment: c,
-          user: u,
-          user_liked: not is_nil(l.id),
-          likes_count: coalesce(lc.likes_count, 0)
-        }
-      )
-
-    query =
-      if last_time_fetched do
-        from(c in base_query,
-          where: c.post_id == ^post_id and c.inserted_at < ^last_time_fetched
-        )
-      else
-        from(c in base_query,
-          where: c.post_id == ^post_id
-        )
-      end
-
-    Repo.all(query)
-    |> Enum.reverse()
-    |> Enum.map(fn result ->
-      format_comment(result.comment, result.user, result.likes_count, result.user_liked)
-    end)
+    Punkmade.Fido.fetch_many(
+      %Punkmade.Posts.Comment{},
+      user_id,
+      post_id,
+      batch_size,
+      last_time_fetched
+    )
   end
 
   @doc """

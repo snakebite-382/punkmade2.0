@@ -123,37 +123,69 @@ defmodule PunkmadeWeb.HomeLive do
   def handle_event("toggle_like", %{"post_id" => post_id}, socket) do
     user = socket.assigns.current_user
 
-    posts =
-      socket.assigns.posts
-      |> Enum.map(fn post ->
-        if post.id == String.to_integer(post_id) do
-          liked = Posts.toggle_like?(post_id, user.id)
+    liked = Posts.toggle_like?(post_id, user.id)
 
-          %{
-            id: post.id,
-            source: Map.get(post, :source),
-            content:
-              post
-              |> Map.get(:content)
-              |> Map.put(:user_liked, liked)
-              |> Map.update!(:likes_count, fn count ->
-                if liked do
-                  count + 1
-                else
-                  count - 1
-                end
-              end)
-          }
-        else
-          post
-        end
+    post =
+      Enum.find(socket.assigns.posts, fn post ->
+        post.id == String.to_integer(post_id)
       end)
+      |> set_like(liked, liked)
 
-    {:noreply, assign(socket, :posts, posts)}
+    posts =
+      post
+      |> set_post(socket.assigns.posts)
+
+    {:noreply, broadcast_like(socket, liked, post.id, user.id) |> assign(:posts, posts)}
+  end
+
+  defp set_post(post, posts) do
+    Enum.map(posts, fn entry ->
+      if entry.id == post.id do
+        post
+      else
+        entry
+      end
+    end)
+  end
+
+  defp set_like(post, liked, user_liked) do
+    %{
+      id: post.id,
+      source: Map.get(post, :source),
+      content:
+        post
+        |> Map.get(:content)
+        |> Map.put(:user_liked, user_liked)
+        |> Map.update!(:likes_count, fn count ->
+          if liked do
+            count + 1
+          else
+            count - 1
+          end
+        end)
+    }
+  end
+
+  defp broadcast_like(socket, liked, post_id, user_id) do
+    case PunkmadeWeb.Endpoint.broadcast(
+           "post:#{socket.assigns.scene_id}",
+           "toggle_post_like",
+           %{post_id: post_id, liked: liked, user_id: user_id, origin: socket.id}
+         ) do
+      :ok ->
+        socket
+
+      {:error, _} ->
+        socket
+        |> put_flash(
+          :error,
+          "Your like was created, but there was an error updating the feed for this scene"
+        )
+    end
   end
 
   def handle_info(
-        %{event: "new_post", topic: "post:" <> scene_id, payload: post},
+        %Phoenix.Socket.Broadcast{event: "new_post", topic: "post:" <> scene_id, payload: post},
         socket
       ) do
     if socket.assigns.scene_id == scene_id do
@@ -161,6 +193,32 @@ defmodule PunkmadeWeb.HomeLive do
     else
       {:noreply, socket}
     end
+  end
+
+  def handle_info(
+        %Phoenix.Socket.Broadcast{
+          event: "toggle_post_like",
+          topic: "post:" <> scene_id,
+          payload: %{post_id: post_id, liked: liked, user_id: user_id, origin: origin}
+        },
+        socket
+      ) do
+    if socket.assigns.scene_id == scene_id and origin != socket.id do
+      post =
+        Enum.find(socket.assigns.posts, fn post -> post.id == post_id end)
+        |> set_like(liked, user_id == socket.assigns.current_user.id and liked)
+
+      posts = set_post(post, socket.assigns.posts)
+
+      {:noreply, socket |> update(:posts, fn _ -> posts end)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_info(msg, socket) do
+    IO.inspect(msg, label: "OH MY FUCKING GOOOOOOD")
+    {:noreply, socket}
   end
 
   defp post_created(socket, post) do

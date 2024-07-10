@@ -590,7 +590,7 @@ defmodule PunkmadeWeb.CoreComponents do
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} {@rest} />
+    <span class={[@name, @class, "z-0"]} {@rest} />
     """
   end
 
