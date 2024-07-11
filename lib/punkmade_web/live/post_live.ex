@@ -1,13 +1,12 @@
 defmodule PunkmadeWeb.PostLive do
   @comment_batch_size 5
+  alias Punkmade.Dominatrix
   alias Punkmade.Posts
   alias Punkmade.Posts.Comment
   use PunkmadeWeb, :live_view
 
   def mount(%{"id" => id}, _session, socket) do
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(Punkmade.PubSub, "comment:" <> id)
-    end
+    Dominatrix.subscribe("comment", id, socket)
 
     {:ok,
      socket
@@ -100,12 +99,12 @@ defmodule PunkmadeWeb.PostLive do
   def handle_event("toggle_comment_like", %{"comment_id" => comment_id}, socket) do
     user = socket.assigns.current_user
 
+    liked = Posts.toggle_comment_like?(comment_id, user.id)
+
     comments =
       socket.assigns.comments
       |> Enum.map(fn comment ->
         if comment.id == String.to_integer(comment_id) do
-          liked = Posts.toggle_comment_like?(comment_id, user.id)
-
           %{
             id: comment.id,
             source: Map.get(comment, :source),
@@ -126,7 +125,9 @@ defmodule PunkmadeWeb.PostLive do
         end
       end)
 
-    {:noreply, assign(socket, :comments, comments)}
+    {:noreply,
+     assign(socket, :comments, comments)
+     |> Dominatrix.like("comment", comment_id, user.id, liked, socket.assigns.post.id)}
   end
 
   def handle_info(
@@ -142,6 +143,63 @@ defmodule PunkmadeWeb.PostLive do
     else
       {:noreply, socket |> put_flash(:error, "ohuh")}
     end
+  end
+
+  def handle_info(
+        %{
+          event: "toggle_like",
+          topic: "comment:" <> post_id,
+          payload: %{
+            id: id,
+            liked: liked,
+            user_id: user_id,
+            origin: origin
+          }
+        },
+        socket
+      ) do
+    if socket.assigns.post.id == String.to_integer(post_id) and origin != socket.id do
+      comment =
+        Enum.find(socket.assigns.comments, fn comment ->
+          comment.id == String.to_integer(id)
+        end)
+        |> set_like(liked, user_id == socket.assigns.current_user.id and liked)
+
+      comments = set_comment(comment, socket.assigns.comments)
+
+      {:noreply, update(socket, :comments, fn _ -> comments end)}
+    else
+      IO.puts("IGNORING")
+      {:noreply, socket}
+    end
+  end
+
+  defp set_comment(comment, comments) do
+    Enum.map(comments, fn entry ->
+      if entry.id == comment.id do
+        comment
+      else
+        entry
+      end
+    end)
+  end
+
+  defp set_like(comment, liked, user_liked) do
+    %{
+      id: comment.id,
+      source: Map.get(comment, :source),
+      content:
+        comment
+        |> Map.get(:content)
+        |> Map.put(:user_liked, user_liked)
+        |> Map.update!(:likes_count, fn count ->
+          if liked do
+            count + 1
+          else
+            count - 1
+          end
+        end)
+    }
   end
 
   defp comment_created(socket, comment) do
