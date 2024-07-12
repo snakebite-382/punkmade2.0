@@ -32,28 +32,7 @@
 
     <ul class="gap-6 pointer-events-auto">
       <%= for post <- @posts do %>
-        <li class="my-4 flex-col flex cursor-pointer">
-          <.link navigate={~p"/post?id=#{post.id}"}>
-              <div><%= post.source.name %> : </div>
-              <div><%= post.content.title %> </div>
-              <div><%= post.content.body %> </div>
-          </.link>
-          <div>
-            <%= post.content.likes_count %> <.icon
-              class={if post.content.user_liked do
-                "bg-accent"
-              else
-                "bg-fg"
-              end}
-              name={if post.content.user_liked do
-                "hero-heart-solid"
-              else
-                "hero-heart"
-              end} 
-              phx-click="toggle_like" 
-              phx-value-post_id={post.id}/>
-          </div>
-        </li>
+        <.live_component module={PostComponent} id={post.id} post={post} scene_id={@scene_id} current_user={@current_user}/>
       <% end %>
     </ul>
     <.button phx-click="load_more">Load More</.button>

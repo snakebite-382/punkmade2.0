@@ -2,6 +2,7 @@ defmodule PunkmadeWeb.HomeLive do
   @post_batch_size 10
 
   use PunkmadeWeb, :live_view
+  use PunkmadeWeb.SharedPostHandlers
 
   alias Punkmade.Scenes
   alias Punkmade.Posts
@@ -117,7 +118,6 @@ defmodule PunkmadeWeb.HomeLive do
 
       {:error, changeset} ->
         error = "there was an error when creating your post"
-        IO.inspect(changeset)
 
         {:noreply,
          socket
@@ -127,57 +127,7 @@ defmodule PunkmadeWeb.HomeLive do
   end
 
   def handle_event("load_more", _params, socket) do
-    IO.puts("LAST TIME FETCHED")
-    IO.inspect(socket.assigns.last_time_fetched)
     {:noreply, socket |> get_posts(socket.assigns.scene_id)}
-  end
-
-  def handle_event("toggle_like", %{"post_id" => post_id}, socket) do
-    user = socket.assigns.current_user
-
-    liked = Posts.toggle_like?(post_id, user.id)
-
-    post =
-      Enum.find(socket.assigns.posts, fn post ->
-        post.id == String.to_integer(post_id)
-      end)
-      |> set_like(liked, liked)
-
-    posts =
-      post
-      |> set_post(socket.assigns.posts)
-
-    {:noreply,
-     Dominatrix.like(socket, "post", post.id, user.id, liked, socket.assigns.scene_id)
-     |> assign(:posts, posts)}
-  end
-
-  defp set_post(post, posts) do
-    Enum.map(posts, fn entry ->
-      if entry.id == post.id do
-        post
-      else
-        entry
-      end
-    end)
-  end
-
-  defp set_like(post, liked, user_liked) do
-    %{
-      id: post.id,
-      source: Map.get(post, :source),
-      content:
-        post
-        |> Map.get(:content)
-        |> Map.put(:user_liked, user_liked)
-        |> Map.update!(:likes_count, fn count ->
-          if liked do
-            count + 1
-          else
-            count - 1
-          end
-        end)
-    }
   end
 
   def handle_info(
@@ -189,31 +139,5 @@ defmodule PunkmadeWeb.HomeLive do
     else
       {:noreply, socket}
     end
-  end
-
-  def handle_info(
-        %Phoenix.Socket.Broadcast{
-          event: "toggle_like",
-          topic: "post:" <> scene_id,
-          payload: %{id: post_id, liked: liked, user_id: user_id, origin: origin}
-        },
-        socket
-      ) do
-    if socket.assigns.scene_id == scene_id and origin != socket.id do
-      post =
-        Enum.find(socket.assigns.posts, fn post -> post.id == post_id end)
-        |> set_like(liked, user_id == socket.assigns.current_user.id and liked)
-
-      posts = set_post(post, socket.assigns.posts)
-
-      {:noreply, socket |> update(:posts, fn _ -> posts end)}
-    else
-      {:noreply, socket}
-    end
-  end
-
-  def handle_info(msg, socket) do
-    IO.inspect(msg, label: "OH MY FUCKING GOOOOOOD")
-    {:noreply, socket}
   end
 end

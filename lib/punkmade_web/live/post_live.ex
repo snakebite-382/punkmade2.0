@@ -4,9 +4,11 @@ defmodule PunkmadeWeb.PostLive do
   alias Punkmade.Posts
   alias Punkmade.Posts.Comment
   use PunkmadeWeb, :live_view
+  use PunkmadeWeb.SharedPostHandlers
 
-  def mount(%{"id" => id}, _session, socket) do
+  def mount(%{"id" => id, "scene_id" => scene_id}, _session, socket) do
     Dominatrix.subscribe("comment", id, socket)
+    Dominatrix.subscribe("post", scene_id, socket)
 
     {:ok,
      socket
@@ -27,6 +29,7 @@ defmodule PunkmadeWeb.PostLive do
        )
      )
      |> assign(:comments, [])
+     |> assign(:scene_id, scene_id)
      |> fetch_comments(id)}
   end
 
