@@ -1,8 +1,8 @@
 defmodule PostComponent do
-  alias Punkmade.Dominatrix
+  alias Punkmade.Postable
   alias PunkmadeWeb.CoreComponents
+  alias Punkmade.Posts.Post
   use Phoenix.LiveComponent
-  alias Punkmade.Posts
 
   def render(assigns) do
     ~H"""
@@ -39,11 +39,9 @@ defmodule PostComponent do
   end
 
   def update(%{id: post_id, liked: liked, user_id: user_id, current_user: user}, socket) do
-    IO.puts("GOT THE LIKE UPDATE")
-
     post =
       socket.assigns.post
-      |> set_like(liked, liked and user_id == user.id)
+      |> Postable.Generics.set_like(liked, liked and user_id == user.id)
 
     {
       :ok,
@@ -55,35 +53,11 @@ defmodule PostComponent do
     {:ok, socket |> assign(assigns)}
   end
 
-  def handle_event("toggle_like", %{"post_id" => post_id}, socket) do
+  def handle_event("toggle_like", %{"post_id" => _post_id}, socket) do
     user = socket.assigns.current_user
+    post = socket.assigns.post
+    scene_id = socket.assigns.scene_id
 
-    liked = Posts.toggle_like?(post_id, user.id)
-
-    post =
-      socket.assigns.post
-      |> set_like(liked, liked)
-
-    {:noreply,
-     Dominatrix.like(socket, "post", post.id, user.id, liked, socket.assigns.scene_id)
-     |> assign(:post, post)}
-  end
-
-  defp set_like(post, liked, user_liked) do
-    %{
-      id: post.id,
-      source: Map.get(post, :source),
-      content:
-        post
-        |> Map.get(:content)
-        |> Map.put(:user_liked, user_liked)
-        |> Map.update!(:likes_count, fn count ->
-          if liked do
-            count + 1
-          else
-            count - 1
-          end
-        end)
-    }
+    {:noreply, socket |> assign(post: Postable.like(%Post{}, post, user.id, scene_id, socket))}
   end
 end

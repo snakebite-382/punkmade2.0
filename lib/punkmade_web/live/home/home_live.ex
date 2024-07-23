@@ -2,7 +2,7 @@ defmodule PunkmadeWeb.HomeLive do
   @post_batch_size 10
 
   use PunkmadeWeb, :live_view
-  use PunkmadeWeb.SharedPostHandlers
+  use Punkmade.Postable.PubSubEndpoints
 
   alias Punkmade.Scenes
   alias Punkmade.Posts

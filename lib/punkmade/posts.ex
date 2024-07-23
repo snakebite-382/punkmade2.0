@@ -59,11 +59,11 @@ defmodule Punkmade.Posts do
   end
 
   def get_posts_by_scene(scene_id, user_id, batch_size, last_time_fetched \\ nil) do
-    Punkmade.Fido.fetch_many(
+    Punkmade.Postable.fetch(
       %Punkmade.Posts.Post{},
+      batch_size,
       user_id,
       scene_id,
-      batch_size,
       last_time_fetched
     )
   end
@@ -94,11 +94,11 @@ defmodule Punkmade.Posts do
   alias Punkmade.Posts.Comment
 
   def get_comments(post_id, user_id, batch_size, last_time_fetched \\ nil) do
-    Punkmade.Fido.fetch_many(
+    Punkmade.Postable.fetch(
       %Punkmade.Posts.Comment{},
+      batch_size,
       user_id,
       post_id,
-      batch_size,
       last_time_fetched
     )
   end

@@ -1,5 +1,5 @@
 defmodule Punkmade.Dominatrix do
-  alias Punkmade.Mystique
+  alias Punkmade.Postable
 
   def subscribe(channel, parent_id, socket) do
     if Phoenix.LiveView.connected?(socket) do
@@ -21,7 +21,7 @@ defmodule Punkmade.Dominatrix do
     case PunkmadeWeb.Endpoint.broadcast(
            "#{channel}:#{parent_id}",
            "new_#{channel}",
-           Mystique.shape(object, user)
+           Postable.shape(object, user, %{num_likes: 0, user_liked: false})
          ) do
       :ok ->
         {:ok, info}

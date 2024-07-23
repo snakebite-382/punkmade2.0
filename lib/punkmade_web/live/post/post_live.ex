@@ -4,7 +4,7 @@ defmodule PunkmadeWeb.PostLive do
   alias Punkmade.Posts
   alias Punkmade.Posts.Comment
   use PunkmadeWeb, :live_view
-  use PunkmadeWeb.SharedPostHandlers
+  use Punkmade.Postable.PubSubEndpoints
 
   def mount(%{"id" => id, "scene_id" => scene_id}, _session, socket) do
     Dominatrix.subscribe("comment", id, socket)
