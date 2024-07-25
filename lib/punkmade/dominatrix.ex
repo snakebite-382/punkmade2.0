@@ -14,19 +14,24 @@ defmodule Punkmade.Dominatrix do
     end
   end
 
-  def new(channel, object, user, parent_id) do
+  def new(socket, channel, object, user, parent_id) do
     info = "#{channel} created successfully"
     error = "your #{channel} was created but there was an error updating the feed"
+    object = Postable.shape(object, user, %{num_likes: 0, user_liked: false})
 
     case PunkmadeWeb.Endpoint.broadcast(
            "#{channel}:#{parent_id}",
            "new_#{channel}",
-           Postable.shape(object, user, %{num_likes: 0, user_liked: false})
+           %{
+             object: object,
+             origin: socket.id
+           }
          ) do
       :ok ->
-        {:ok, info}
+        {:ok, %{msg: info, created: object}}
 
-      {:error, _} ->
+      {:error, err} ->
+        IO.inspect("error", err)
         {:error, error}
     end
   end

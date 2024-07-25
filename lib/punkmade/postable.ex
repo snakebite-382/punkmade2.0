@@ -3,7 +3,7 @@ defprotocol Punkmade.Postable do
 
   def fetch(entity, amount, user_id, parent_id, last_time_fetched)
 
-  def post(entity, user_id, parent_id)
+  def post(entity, attrs, user_id, parent_id, socket)
 
   def like(entity, map, user_id, parent_id, socket)
 end
@@ -129,18 +129,18 @@ defimpl Punkmade.Postable, for: Punkmade.Posts.Post do
     )
   end
 
-  def post(post, user, scene_id) do
+  def post(post, attrs, user, scene_id, socket) do
     attrs =
-      post
+      attrs
       |> Map.put("user_id", user.id)
       |> Map.put("scene_id", scene_id)
 
-    %Post{}
+    post
     |> Post.creation_changeset(attrs)
     |> Repo.insert()
     |> case do
       {:ok, post} ->
-        Dominatrix.new("post", post, user, scene_id)
+        Dominatrix.new(socket, "post", post, user, scene_id)
 
       {:error, changset} ->
         {:create_error, changset}
@@ -188,18 +188,18 @@ defimpl Punkmade.Postable, for: Punkmade.Posts.Comment do
     )
   end
 
-  def post(comment, user, post_id) do
+  def post(comment, attrs, user, post_id, socket) do
     attrs =
-      comment
+      attrs
       |> Map.put("user_id", user.id)
       |> Map.put("post_id", post_id)
 
-    %Comment{}
+    comment
     |> Comment.changeset(attrs)
     |> Repo.insert()
     |> case do
       {:ok, comment} ->
-        Dominatrix.new("comment", comment, user, post_id)
+        Dominatrix.new(socket, "comment", comment, user, post_id)
 
       {:error, changset} ->
         {:create_error, changset}

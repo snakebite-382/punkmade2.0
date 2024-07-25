@@ -8,6 +8,7 @@ defmodule PunkmadeWeb.HomeLive do
   alias Punkmade.Posts
   alias Punkmade.Posts.Post
   alias Punkmade.Dominatrix
+  alias Punkmade.Postable
 
   def mount(_params, _session, socket) do
     if socket.assigns.current_user do
@@ -94,30 +95,17 @@ defmodule PunkmadeWeb.HomeLive do
     %{"post" => post_params} = params
     %{scene_id: scene_id, current_user: user} = socket.assigns
 
-    # keep user from setting scene_id and most importantly user_id themself while still allowing it to be used in validation changeset by setting it again here
-
-    post_params
-    |> Map.put("user_id", user.id)
-    |> Map.put("scene_id", scene_id)
-    |> Posts.create_post()
+    Postable.post(%Post{}, post_params, user, scene_id, socket)
     |> case do
-      {:ok, post} ->
-        case Dominatrix.new("post", post, user, scene_id) do
-          {:ok, msg} ->
-            {
-              :noreply,
-              put_flash(socket, :info, msg)
-            }
+      {:ok, %{msg: msg, created: post}} ->
+        {:noreply,
+         socket |> put_flash(:info, msg) |> update(:posts, fn posts -> [post | posts] end)}
 
-          {:error, msg} ->
-            {
-              :noreply,
-              put_flash(socket, :error, msg)
-            }
-        end
+      {:error, error} ->
+        {:noreply, socket.put_flash(:error, error)}
 
-      {:error, changeset} ->
-        error = "there was an error when creating your post"
+      {:create_error, changeset} ->
+        error = "there was an error creating your post"
 
         {:noreply,
          socket
@@ -131,10 +119,14 @@ defmodule PunkmadeWeb.HomeLive do
   end
 
   def handle_info(
-        %Phoenix.Socket.Broadcast{event: "new_post", topic: "post:" <> scene_id, payload: post},
+        %Phoenix.Socket.Broadcast{
+          event: "new_post",
+          topic: "post:" <> scene_id,
+          payload: %{object: post, origin: origin}
+        },
         socket
       ) do
-    if socket.assigns.scene_id == scene_id do
+    if socket.assigns.scene_id == scene_id and origin != socket.id do
       {:noreply, socket |> update(:posts, fn posts -> [post | posts] end)}
     else
       {:noreply, socket}

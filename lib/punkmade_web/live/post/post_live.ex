@@ -3,6 +3,7 @@ defmodule PunkmadeWeb.PostLive do
   alias Punkmade.Dominatrix
   alias Punkmade.Posts
   alias Punkmade.Posts.Comment
+  alias Punkmade.Postable
   use PunkmadeWeb, :live_view
   use Punkmade.Postable.PubSubEndpoints
 
@@ -76,15 +77,21 @@ defmodule PunkmadeWeb.PostLive do
   end
 
   def handle_event("create_comment", %{"comment" => comment_params}, socket) do
-    comment_params
-    |> Map.put("user_id", socket.assigns.current_user.id)
-    |> Map.put("post_id", socket.assigns.post.id)
-    |> Posts.create_comment()
+    Postable.post(
+      %Comment{},
+      comment_params,
+      socket.assigns.current_user,
+      socket.assigns.post.id,
+      socket
+    )
     |> case do
-      {:ok, comment} ->
-        comment_created(socket, comment)
+      {:ok, %{msg: _msg, created: comment}} ->
+        {:noreply, socket |> update(:comments, fn comments -> comments ++ [comment] end)}
 
-      {:error, changeset} ->
+      {:error, error} ->
+        {:noreply, socket.put_flash(:error, error)}
+
+      {:create_error, changeset} ->
         error = "There was an error posting your comment"
 
         comment_form =
@@ -134,17 +141,21 @@ defmodule PunkmadeWeb.PostLive do
   end
 
   def handle_info(
-        %{event: "new_comment", topic: "comment:" <> post_id, payload: comment},
+        %{
+          event: "new_comment",
+          topic: "comment:" <> post_id,
+          payload: %{object: comment, origin: origin}
+        },
         socket
       ) do
-    if socket.assigns.post.id == String.to_integer(post_id) do
+    if socket.assigns.post.id == String.to_integer(post_id) and origin != socket.id do
       {:noreply,
        socket
        |> update(:comments, fn comments ->
-         comments ++ comment
+         comments ++ [comment]
        end)}
     else
-      {:noreply, socket |> put_flash(:error, "ohuh")}
+      {:noreply, socket}
     end
   end
 
@@ -203,27 +214,5 @@ defmodule PunkmadeWeb.PostLive do
           end
         end)
     }
-  end
-
-  defp comment_created(socket, comment) do
-    info = "Commented"
-
-    case PunkmadeWeb.Endpoint.broadcast(
-           "comment:#{socket.assigns.post.id}",
-           "new_comment",
-           Posts.format_comment(comment, socket.assigns.current_user)
-         ) do
-      :ok ->
-        IO.puts("sent")
-        {:noreply, socket |> put_flash(:info, info)}
-
-      {:error, _} ->
-        error =
-          "Your comment was created, but there was an error updating the feed, a refresh may be required"
-
-        {:noreply, socket |> put_flash(:error, error)}
-    end
-
-    {:noreply, socket |> put_flash(:info, info)}
   end
 end
